@@ -1,4 +1,6 @@
-use ratatui::widgets::{Block, Padding, Paragraph, Widget};
+use ratatui::
+    widgets::{Block, Padding, Paragraph, Widget}
+;
 
 #[derive(Debug)]
 pub struct Menu;
@@ -13,19 +15,17 @@ impl Default for Menu {
         Self::new()
     }
 }
+
 impl Widget for &Menu {
     fn render(self, area: ratatui::prelude::Rect, buf: &mut ratatui::prelude::Buffer)
     where
         Self: Sized,
     {
         // let [zone] = Layout::horizontal([Constraint::Length(10)]).areas(area);
-        let menu_block = Block::default().padding(Padding {
-            top: 1,
-            right: 0,
-            bottom: 0,
-            left: 1,
-        });
+        let menu_block = Block::default().padding(Padding::horizontal(2));
 
-        Paragraph::new("Help (?)").block(menu_block).render(area, buf);
+        Paragraph::new("Help (?)")
+            .block(menu_block)
+            .render(area, buf);
     }
 }

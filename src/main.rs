@@ -1,4 +1,6 @@
 mod app;
+mod board;
+mod tile;
 mod menu;
 mod status_bar;
 

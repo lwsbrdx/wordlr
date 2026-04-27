@@ -4,13 +4,12 @@ use std::io::Result;
 use ratatui::{
     DefaultTerminal, Frame,
     crossterm::event::{self, Event, KeyEventKind},
-    layout::{Constraint, Layout},
-    widgets::{Paragraph, Widget},
+    layout::{self, Constraint, Flex, Layout},
+    widgets::Widget,
 };
 
 use crate::{
-    menu::Menu,
-    status_bar::StatusBar,
+    board::Board, menu::Menu, status_bar::StatusBar
 };
 
 
@@ -34,6 +33,7 @@ impl fmt::Display for Modes {
 #[derive(Debug)]
 pub struct App {
     menu: Menu,
+    board: Board,
     mode: Modes,
     exit: bool,
 }
@@ -44,16 +44,14 @@ impl Widget for &App {
         Self: Sized,
     {
         let [top, mid, bottom] = Layout::vertical([
-            Constraint::Length(20),
-            Constraint::Length(20),
             Constraint::Length(1),
-        ]).flex(ratatui::layout::Flex::SpaceBetween)
+            Constraint::Length(50),
+            Constraint::Length(1),
+        ]).flex(Flex::SpaceBetween)
         .areas(area);
 
         self.menu.render(top, buf);
-
-        Paragraph::new("Hello World!").centered().render(mid, buf);
-
+        self.board.render(mid, buf);
         let sb = StatusBar::new(&self.mode);
         sb.render(bottom, buf);
     }
@@ -108,6 +106,7 @@ impl App {
     pub(crate) fn new() -> Self {
         Self {
             menu: Menu,
+            board: Board::new(),
             mode: Modes::Normal,
             exit: false,
         }
