@@ -4,19 +4,13 @@ use ratatui::{
 };
 
 #[derive(Debug, Default, Clone, Copy)]
-pub(crate) struct Tile {
-    letter: Option<char>,
-    state: TileState,
-}
-
-impl Tile {
-    pub(crate) fn new(letter: Option<char>, state: TileState) -> Self {
-        Self { letter, state }
-    }
+pub struct Tile {
+    pub letter: Option<char>,
+    pub state: TileState,
 }
 
 #[derive(Debug, Default, Copy, Clone)]
-pub(crate) enum TileState {
+pub enum TileState {
     #[default]
     Empty,
     Typing,
@@ -25,13 +19,15 @@ pub(crate) enum TileState {
     Correct,
 }
 
-
 impl Widget for &Tile {
     fn render(self, area: ratatui::prelude::Rect, buf: &mut ratatui::prelude::Buffer)
     where
         Self: Sized,
     {
-        let block = Block::bordered().border_set(symbols::border::ROUNDED);
+        let block = Block::bordered().border_set(match self.state {
+            TileState::Typing => symbols::border::DOUBLE,
+            _ => symbols::border::PLAIN,
+        });
 
         Paragraph::new(if let Some(l) = self.letter {
             l.to_string()

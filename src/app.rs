@@ -10,10 +10,10 @@ use ratatui::{
 use crate::{
     board::{Board, BoardState},
     menu::Menu,
-    status_bar::StatusBar,
+    status_bar::StatusBar, tile::TileState,
 };
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Modes {
     Normal,
     Insert,
@@ -80,20 +80,47 @@ impl App {
     }
 
     fn handle_key_pressed(&mut self, code: event::KeyCode) {
-        match code {
-            event::KeyCode::Char('q') => self.exit(),
-            event::KeyCode::Char('i') | event::KeyCode::Char('a') => self.insert_mode(),
-            event::KeyCode::Esc => self.normal_mode(),
-            _ => {}
+        if self.mode == Modes::Insert {
+            match code {
+                event::KeyCode::Esc => self.normal_mode(),
+                event::KeyCode::Char(c) => self.input(c),
+                event::KeyCode::Backspace => self.delete(),
+                _ => {}
+            }
+        }
+
+        if self.mode == Modes::Normal {
+            match code {
+                event::KeyCode::Char('q') => self.exit(),
+                event::KeyCode::Char('i') => self.insert_mode(),
+                _ => {}
+            }
+        }
+    }
+
+    fn input(&mut self, c: char) {
+        if !c.is_alphabetic() {
+            return
+        }
+
+        let cc = self.board_state.current_col;
+        let cr = self.board_state.current_row;
+        let tile = &mut self.board_state.tiles[cr][cc];
+        tile.letter = Some(c.to_ascii_uppercase());
+
+        if self.board_state.current_col < 4 {
+            self.board_state.go_next_tile();
         }
     }
 
     fn normal_mode(&mut self) {
         self.mode = Modes::Normal;
+        self.board_state.current_tile().state = TileState::Empty;
     }
 
     fn insert_mode(&mut self) {
         self.mode = Modes::Insert;
+        self.board_state.current_tile().state = TileState::Typing;
     }
 
     fn exit(&mut self) {
@@ -106,6 +133,18 @@ impl App {
             board_state: BoardState::new(),
             mode: Modes::Normal,
             exit: false,
+        }
+    }
+
+    fn delete(&mut self) {
+        let cc = self.board_state.current_col;
+
+        if self.board_state.current_tile().letter.is_none() && cc > 0 {
+            self.board_state.go_previous_tile();
+        }
+
+        if self.board_state.current_tile().letter.is_some() {
+            self.board_state.empty_current_tile();
         }
     }
 }
