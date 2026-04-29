@@ -1,6 +1,7 @@
 use ratatui::{
     layout::{Constraint, Flex, Layout},
-    widgets::{Paragraph, Widget},
+    prelude::{Buffer, Rect},
+    widgets::{StatefulWidget, Widget},
 };
 
 use crate::tile::Tile;
@@ -13,10 +14,21 @@ impl Board {
     }
 }
 
-pub(crate) struct BoardState {
+#[derive(Debug)]
+pub struct BoardState {
     tiles: [[Tile; 5]; 6], // 6 lignes, 5 colonnes
     current_row: usize,
     current_col: usize,
+}
+
+impl BoardState {
+    pub(crate) fn new() -> Self {
+        Self {
+            tiles: [[Tile::default(); 5]; 6],
+            current_row: 0,
+            current_col: 0,
+        }
+    }
 }
 
 impl Default for Board {
@@ -25,8 +37,10 @@ impl Default for Board {
     }
 }
 
-impl Widget for &Board {
-    fn render(self, area: ratatui::prelude::Rect, buf: &mut ratatui::prelude::Buffer)
+impl StatefulWidget for &Board {
+    type State = BoardState;
+
+    fn render(self, area: Rect, buf: &mut Buffer, state: &mut BoardState)
     where
         Self: Sized,
     {
@@ -34,14 +48,14 @@ impl Widget for &Board {
             .flex(Flex::Center)
             .split(area);
 
-        lines.iter().for_each(|line| {
+        for (row, line) in lines.iter().enumerate() {
             let line_layout = Layout::horizontal([Constraint::Length(8); 5])
                 .flex(Flex::Center)
                 .split(*line);
 
-            line_layout.iter().for_each(|el| {
-                Tile::default().render(*el, buf);
-            });
-        });
+            for (col, el) in line_layout.iter().enumerate() {
+                state.tiles[row][col].render(*el, buf);
+            }
+        }
     }
 }

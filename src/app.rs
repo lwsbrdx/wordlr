@@ -4,14 +4,14 @@ use std::io::Result;
 use ratatui::{
     DefaultTerminal, Frame,
     crossterm::event::{self, Event, KeyEventKind},
-    layout::{self, Constraint, Flex, Layout},
-    widgets::Widget,
+    layout::{Constraint, Flex, Layout},
 };
 
 use crate::{
-    board::Board, menu::Menu, status_bar::StatusBar
+    board::{Board, BoardState},
+    menu::Menu,
+    status_bar::StatusBar,
 };
-
 
 #[derive(Debug, Clone)]
 pub enum Modes {
@@ -33,28 +33,9 @@ impl fmt::Display for Modes {
 #[derive(Debug)]
 pub struct App {
     menu: Menu,
-    board: Board,
+    board_state: BoardState,
     mode: Modes,
     exit: bool,
-}
-
-impl Widget for &App {
-    fn render(self, area: ratatui::prelude::Rect, buf: &mut ratatui::prelude::Buffer)
-    where
-        Self: Sized,
-    {
-        let [top, mid, bottom] = Layout::vertical([
-            Constraint::Length(1),
-            Constraint::Length(50),
-            Constraint::Length(1),
-        ]).flex(Flex::SpaceBetween)
-        .areas(area);
-
-        self.menu.render(top, buf);
-        self.board.render(mid, buf);
-        let sb = StatusBar::new(&self.mode);
-        sb.render(bottom, buf);
-    }
 }
 
 impl App {
@@ -78,8 +59,24 @@ impl App {
         Ok(())
     }
 
-    fn draw(&self, frame: &mut Frame) {
-        frame.render_widget(self, frame.area());
+    fn draw(&mut self, frame: &mut Frame) {
+        let area = frame.area();
+
+        let [top, mid, bottom] = Layout::vertical([
+            Constraint::Length(1),
+            Constraint::Length(50),
+            Constraint::Length(1),
+        ])
+        .flex(Flex::SpaceBetween)
+        .areas(area);
+
+        frame.render_widget(&self.menu, top);
+
+        let board = Board::new();
+        frame.render_stateful_widget(&board, mid, &mut self.board_state);
+
+        let sb = StatusBar::new(&self.mode);
+        frame.render_widget(&sb, bottom);
     }
 
     fn handle_key_pressed(&mut self, code: event::KeyCode) {
@@ -106,7 +103,7 @@ impl App {
     pub(crate) fn new() -> Self {
         Self {
             menu: Menu,
-            board: Board::new(),
+            board_state: BoardState::new(),
             mode: Modes::Normal,
             exit: false,
         }

@@ -3,7 +3,7 @@ use ratatui::{
     widgets::{Block, Paragraph, Widget},
 };
 
-#[derive(Default)]
+#[derive(Debug, Default, Clone, Copy)]
 pub(crate) struct Tile {
     letter: Option<char>,
     state: TileState,
@@ -15,7 +15,7 @@ impl Tile {
     }
 }
 
-#[derive(Default)]
+#[derive(Debug, Default, Copy, Clone)]
 pub(crate) enum TileState {
     #[default]
     Empty,
