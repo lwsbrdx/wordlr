@@ -1,5 +1,8 @@
 use core::fmt;
-use std::io::Result;
+use std::{
+    io::Result,
+    time::{Duration, Instant},
+};
 
 use ratatui::{
     DefaultTerminal, Frame,
@@ -10,7 +13,9 @@ use ratatui::{
 use crate::{
     board::{Board, BoardState},
     menu::Menu,
-    status_bar::StatusBar, tile::TileState,
+    status_bar::StatusBar,
+    tile::TileState,
+    validator::Validator,
 };
 
 #[derive(Debug, Clone, PartialEq)]
@@ -49,12 +54,19 @@ impl App {
     }
 
     fn handle_events(&mut self) -> Result<()> {
-        match event::read()? {
-            Event::Key(key_event) if key_event.kind == KeyEventKind::Press => {
-                self.handle_key_pressed(key_event.code)
+        if let Ok(true) = event::poll(Duration::from_millis(100)) {
+            if let Event::Key(event) = event::read()?
+                && event.kind == KeyEventKind::Press
+            {
+                self.handle_key_pressed(event.code)
             }
-            _ => {}
-        };
+        } else {
+            if let Some(i) = self.board_state.instant
+                && Instant::now() > i
+            {
+                self.board_state.unhighlight_empty_tiles();
+            }
+        }
 
         Ok(())
     }
@@ -85,6 +97,7 @@ impl App {
                 event::KeyCode::Esc => self.normal_mode(),
                 event::KeyCode::Char(c) => self.input(c),
                 event::KeyCode::Backspace => self.delete(),
+                event::KeyCode::Enter => self.submit(),
                 _ => {}
             }
         }
@@ -100,13 +113,14 @@ impl App {
 
     fn input(&mut self, c: char) {
         if !c.is_alphabetic() {
-            return
+            return;
         }
 
         let cc = self.board_state.current_col;
         let cr = self.board_state.current_row;
         let tile = &mut self.board_state.tiles[cr][cc];
         tile.letter = Some(c.to_ascii_uppercase());
+        tile.state = TileState::Typed;
 
         if self.board_state.current_col < 4 {
             self.board_state.go_next_tile();
@@ -146,6 +160,27 @@ impl App {
         if self.board_state.current_tile().letter.is_some() {
             self.board_state.empty_current_tile();
         }
+    }
+
+    fn submit(&mut self) {
+        if self.board_state.current_col < 4 {
+            // TODO animation pour dire qu'il manque des lettres
+            self.board_state.highlight_empty_tiles();
+            return;
+        }
+
+        let word = self.board_state.get_current_row_word();
+        let validator = Validator::new("POMME"); // TODO generate word based on today
+        let validation_result = validator.validate(word);
+        let current_row = &mut self.board_state.tiles[self.board_state.current_row];
+
+        if let Ok(result_states) = validation_result {
+            for index in 0..5 {
+                current_row[index].state = result_states[index]
+            }
+        }
+
+        self.board_state.go_next_line();
     }
 }
 
