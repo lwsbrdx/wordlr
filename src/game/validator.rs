@@ -4,6 +4,7 @@ pub struct Validator {
     secret_word: String,
 }
 
+#[derive(Debug, PartialEq)]
 pub enum SubmissionError {
     TooShort,
     NotInDictionnary,
@@ -57,9 +58,18 @@ impl Validator {
 
 #[cfg(test)]
 mod tests {
-    use crate::game::tile::TileState;
+    use crate::game::{tile::TileState, validator::SubmissionError};
 
     use super::Validator;
+
+    #[test]
+    fn test_submission_too_short() {
+        let v = Validator::new("POMME");
+        let result = v.validate("LONG".to_owned());
+
+        assert!(result.is_err());
+        assert_eq!(Err(SubmissionError::TooShort), result);
+    }
 
     #[test]
     fn test_validate() {
