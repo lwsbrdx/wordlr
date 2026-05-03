@@ -23,7 +23,7 @@ impl<'a> Widget for &StatusBar<'a> {
     where
         Self: Sized,
     {
-        let [left] = Layout::horizontal([Constraint::Length(10)])
+        let [left, center] = Layout::horizontal([Constraint::Length(10), Constraint::Length(35)])
             .flex(Flex::Start)
             .areas(area);
 
@@ -41,5 +41,16 @@ impl<'a> Widget for &StatusBar<'a> {
         .centered()
         .block(current_mode_block)
         .render(left, buf);
+
+        let help_block = Block::new().padding(Padding::left(1));
+        Paragraph::new(Text::styled(
+            match self.current_mode {
+                Modes::Normal => "Press i to enter Insert mode",
+                Modes::Insert => "Press Esc to enter Normal mode",
+            },
+            Style::default().fg(Color::DarkGray),
+        ))
+        .block(help_block)
+        .render(center, buf);
     }
 }
