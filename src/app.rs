@@ -11,11 +11,16 @@ use ratatui::{
 };
 
 use crate::{
-    board::{Board, BoardState},
-    menu::Menu,
-    status_bar::StatusBar,
-    tile::TileState,
-    validator::Validator,
+    game::{
+        board::BoardState,
+        tile::TileState,
+        validator::Validator,
+    },
+    ui::{
+        board::Board,
+        menu::Menu,
+        status_bar::StatusBar,
+    },
 };
 
 #[derive(Debug, Clone, PartialEq)]
@@ -60,12 +65,10 @@ impl App {
             {
                 self.handle_key_pressed(event.code)
             }
-        } else {
-            if let Some(i) = self.board_state.instant
-                && Instant::now() > i
-            {
-                self.board_state.unhighlight_empty_tiles();
-            }
+        } else if let Some(i) = self.board_state.highlight_until
+            && Instant::now() > i
+        {
+            self.board_state.unhighlight_empty_tiles();
         }
 
         Ok(())
@@ -141,7 +144,7 @@ impl App {
         self.exit = true;
     }
 
-    pub(crate) fn new() -> Self {
+    pub fn new() -> Self {
         Self {
             menu: Menu,
             board_state: BoardState::new(),
@@ -164,7 +167,6 @@ impl App {
 
     fn submit(&mut self) {
         if self.board_state.current_col < 4 {
-            // TODO animation pour dire qu'il manque des lettres
             self.board_state.highlight_empty_tiles();
             return;
         }

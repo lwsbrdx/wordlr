@@ -13,7 +13,7 @@ pub struct StatusBar<'a> {
 }
 
 impl<'a> StatusBar<'a> {
-    pub(crate) fn new(mode: &'a Modes) -> Self {
+    pub fn new(mode: &'a Modes) -> Self {
         Self { current_mode: mode }
     }
 }

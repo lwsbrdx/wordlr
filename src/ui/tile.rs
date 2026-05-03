@@ -4,22 +4,16 @@ use ratatui::{
     widgets::{Block, Paragraph, Widget},
 };
 
-#[derive(Debug, Default, Clone, Copy)]
-pub struct Tile {
-    pub letter: Option<char>,
-    pub state: TileState,
-}
+use crate::game::tile::{Tile, TileState};
 
-#[derive(Debug, Default, Copy, Clone, PartialEq)]
-pub enum TileState {
-    #[default]
-    Empty,
-    Typing,
-    Typed,
-    Highlighted,
-    Absent,
-    Present,
-    Correct,
+fn get_matching_color(state: TileState) -> Color {
+    match state {
+        TileState::Correct => Color::Green,
+        TileState::Present => Color::Rgb(205, 135, 41),
+        TileState::Absent => Color::DarkGray,
+        TileState::Highlighted => Color::LightRed,
+        _ => Color::Reset,
+    }
 }
 
 impl Widget for &Tile {
@@ -27,16 +21,6 @@ impl Widget for &Tile {
     where
         Self: Sized,
     {
-        fn get_matching_color(state: TileState) -> Color {
-            match state {
-                TileState::Correct => Color::Green,
-                TileState::Present => Color::Rgb(205, 135, 41),
-                TileState::Absent => Color::DarkGray,
-                TileState::Highlighted => Color::LightRed,
-                _ => Color::Reset,
-            }
-        }
-
         let block = Block::bordered()
             .border_set(match self.state {
                 TileState::Typing => symbols::border::DOUBLE,

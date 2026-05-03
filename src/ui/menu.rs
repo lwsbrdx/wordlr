@@ -4,8 +4,9 @@ use ratatui::
 
 #[derive(Debug)]
 pub struct Menu;
+
 impl Menu {
-    pub(crate) fn new() -> Self {
+    pub fn new() -> Self {
         Self
     }
 }
@@ -21,7 +22,6 @@ impl Widget for &Menu {
     where
         Self: Sized,
     {
-        // let [zone] = Layout::horizontal([Constraint::Length(10)]).areas(area);
         let menu_block = Block::default().padding(Padding::horizontal(2));
 
         Paragraph::new("Help (?)")

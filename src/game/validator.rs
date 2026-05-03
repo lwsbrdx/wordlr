@@ -1,16 +1,16 @@
-use crate::tile::TileState;
+use crate::game::tile::TileState;
 
-pub(crate) struct Validator {
+pub struct Validator {
     secret_word: String,
 }
 
-pub(crate) enum SubmissionError {
+pub enum SubmissionError {
     TooShort,
     NotInDictionnary,
 }
 
 impl Validator {
-    pub(crate) fn validate(&self, submitted_word: String) -> Result<Vec<TileState>, SubmissionError> {
+    pub fn validate(&self, submitted_word: String) -> Result<Vec<TileState>, SubmissionError> {
         if submitted_word.len() < 5 {
             return Err(SubmissionError::TooShort);
         }
@@ -50,14 +50,14 @@ impl Validator {
         Ok(result)
     }
 
-    pub(crate) fn new(arg: &str) -> Self {
+    pub fn new(arg: &str) -> Self {
         Self { secret_word: arg.to_owned() }
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::tile::TileState;
+    use crate::game::tile::TileState;
 
     use super::Validator;
 
