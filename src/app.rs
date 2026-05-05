@@ -4,6 +4,7 @@ use std::{
     time::{Duration, Instant},
 };
 
+use chrono::{NaiveDate, Utc};
 use ratatui::{
     DefaultTerminal, Frame,
     crossterm::event::{self, Event, KeyEventKind},
@@ -11,16 +12,8 @@ use ratatui::{
 };
 
 use crate::{
-    game::{
-        board::BoardState,
-        tile::TileState,
-        validator::Validator,
-    },
-    ui::{
-        board::Board,
-        menu::Menu,
-        status_bar::StatusBar,
-    },
+    game::{board::BoardState, dictionnary::Dictionnary, tile::TileState, validator::{SubmissionError, Validator}},
+    ui::{board::Board, menu::Menu, status_bar::StatusBar},
 };
 
 #[derive(Debug, Clone, PartialEq)]
@@ -45,6 +38,7 @@ pub struct App {
     menu: Menu,
     board_state: BoardState,
     mode: Modes,
+    dictionnary: Dictionnary,
     exit: bool,
 }
 
@@ -68,7 +62,7 @@ impl App {
         } else if let Some(i) = self.board_state.highlight_until
             && Instant::now() > i
         {
-            self.board_state.unhighlight_empty_tiles();
+            self.board_state.unhighlight_tiles();
         }
 
         Ok(())
@@ -154,6 +148,7 @@ impl App {
             menu: Menu,
             board_state: BoardState::new(),
             mode: Modes::Normal,
+            dictionnary: Dictionnary::new(),
             exit: false,
         }
     }
@@ -177,17 +172,24 @@ impl App {
         }
 
         let word = self.board_state.get_current_row_word();
-        let validator = Validator::new("POMME"); // TODO generate word based on today
+        let secret_word = self.dictionnary.get_word_for_day(Utc::now().date_naive());
+        let validator = Validator::new(secret_word);
         let validation_result = validator.validate(word);
         let current_row = &mut self.board_state.tiles[self.board_state.current_row];
 
-        if let Ok(result_states) = validation_result {
-            for index in 0..5 {
-                current_row[index].state = result_states[index]
-            }
-        }
+        match validation_result {
+            Ok(result_states) => {
+                for index in 0..5 {
+                    current_row[index].state = result_states[index]
+                }
 
-        self.board_state.go_next_line();
+                self.board_state.go_next_line();
+            }
+            Err(SubmissionError::NotInDictionnary) => {
+                self.board_state.highlight_all_tiles();
+            },
+            _ => (),
+        }
     }
 }
 

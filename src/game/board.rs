@@ -1,5 +1,5 @@
-use std::time::{Duration, Instant};
 use std::ops::Add;
+use std::time::{Duration, Instant};
 
 use crate::game::tile::{Tile, TileState};
 
@@ -65,6 +65,14 @@ impl BoardState {
             .collect::<String>()
     }
 
+    pub fn highlight_all_tiles(&mut self) {
+        self.tiles[self.current_row]
+            .iter_mut()
+            .for_each(|t| t.state = TileState::Highlighted);
+
+        self.highlight_until = Some(Instant::now().add(Duration::from_millis(300)));
+    }
+
     pub fn highlight_empty_tiles(&mut self) {
         self.tiles[self.current_row].iter_mut().for_each(|t| {
             if t.letter.is_none() {
@@ -72,15 +80,24 @@ impl BoardState {
             }
         });
 
-        self.highlight_until = Some(Instant::now().add(Duration::from_secs(1)));
+        self.highlight_until = Some(Instant::now().add(Duration::from_millis(700)));
     }
 
-    pub fn unhighlight_empty_tiles(&mut self) {
-        self.tiles[self.current_row].iter_mut().for_each(|t| {
-            if t.letter.is_none() {
-                t.state = TileState::Empty
-            }
-        });
+    pub fn unhighlight_tiles(&mut self) {
+        self.tiles[self.current_row]
+            .iter_mut()
+            .enumerate()
+            .for_each(|(index, t)| {
+                if index == self.current_col {
+                    t.state = TileState::Typing
+                }
+
+                if t.letter.is_none() {
+                    t.state = TileState::Empty
+                } else {
+                    t.state = TileState::Typed
+                }
+            });
 
         self.highlight_until = None;
     }

@@ -1,4 +1,4 @@
-use crate::game::tile::TileState;
+use crate::game::{dictionnary::Dictionnary, tile::TileState};
 
 pub struct Validator {
     secret_word: String,
@@ -16,7 +16,9 @@ impl Validator {
             return Err(SubmissionError::TooShort);
         }
 
-        // TODO validate against dictionnary
+        if !Dictionnary::contains(&submitted_word) {
+            return Err(SubmissionError::NotInDictionnary);
+        }
 
         let chars = submitted_word.chars();
         let mut result = Vec::new();
@@ -51,7 +53,7 @@ impl Validator {
         Ok(result)
     }
 
-    pub fn new(arg: &str) -> Self {
+    pub fn new(arg: String) -> Self {
         Self { secret_word: arg.to_owned() }
     }
 }
@@ -64,7 +66,7 @@ mod tests {
 
     #[test]
     fn test_submission_too_short() {
-        let v = Validator::new("POMME");
+        let v = Validator::new("POMME".to_owned());
         let result = v.validate("LONG".to_owned());
 
         assert!(result.is_err());
@@ -107,7 +109,7 @@ mod tests {
 
     #[test]
     fn test_validate_multiple_times_same_letter() {
-        let v = Validator::new("POMME");
+        let v = Validator::new("POMME".to_owned());
 
         let returned = v.validate("PALME".to_owned());
         if let Ok(r) = returned {
