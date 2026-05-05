@@ -12,6 +12,8 @@ fn get_matching_color(state: TileState) -> Color {
         TileState::Present => Color::Rgb(205, 135, 41),
         TileState::Absent => Color::DarkGray,
         TileState::Highlighted => Color::LightRed,
+        TileState::Typed => Color::Blue,
+        TileState::Typing => Color::LightBlue,
         _ => Color::Reset,
     }
 }

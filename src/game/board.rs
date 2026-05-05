@@ -89,13 +89,14 @@ impl BoardState {
             .enumerate()
             .for_each(|(index, t)| {
                 if index == self.current_col {
-                    t.state = TileState::Typing
+                    t.state = TileState::Typing;
+                    return;
                 }
 
                 if t.letter.is_none() {
-                    t.state = TileState::Empty
+                    t.state = TileState::Empty;
                 } else {
-                    t.state = TileState::Typed
+                    t.state = TileState::Typed;
                 }
             });
 
