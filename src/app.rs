@@ -123,7 +123,12 @@ impl App {
         let cr = self.board_state.current_row;
         let tile = &mut self.board_state.tiles[cr][cc];
         tile.letter = Some(c.to_ascii_uppercase());
-        tile.state = TileState::Typed;
+
+        if cc == 4 {
+            tile.state = TileState::Typing;
+        } else {
+            tile.state = TileState::Typed;
+        }
 
         if self.board_state.current_col < 4 {
             self.board_state.go_next_tile();
