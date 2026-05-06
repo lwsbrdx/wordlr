@@ -1,6 +1,4 @@
-use ratatui::
-    widgets::{Block, Padding, Paragraph, Widget}
-;
+use ratatui::widgets::{Block, Padding, Paragraph, Widget};
 
 #[derive(Debug)]
 pub struct Menu;

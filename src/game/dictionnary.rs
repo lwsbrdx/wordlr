@@ -38,8 +38,8 @@ impl Dictionnary {
         self.available_words[random_index].clone()
     }
 
-    pub(crate) fn contains(word: &String) -> bool {
-        Self::new().available_words.contains(word)
+    pub(crate) fn contains(word: &str) -> bool {
+        Self::new().available_words.contains(&word.to_owned())
     }
 }
 

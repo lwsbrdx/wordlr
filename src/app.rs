@@ -4,7 +4,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-use chrono::{NaiveDate, Utc};
+use chrono::Utc;
 use ratatui::{
     DefaultTerminal, Frame,
     crossterm::event::{self, Event, KeyEventKind},
@@ -12,21 +12,34 @@ use ratatui::{
 };
 
 use crate::{
-    game::{board::BoardState, dictionnary::Dictionnary, tile::TileState, validator::{SubmissionError, Validator}},
-    ui::{board::Board, menu::Menu, status_bar::StatusBar},
+    game::{
+        board::BoardState,
+        dictionnary::Dictionnary,
+        game_stats::GamesStats,
+        tile::TileState,
+        validator::{SubmissionError, Validator},
+    },
+    helpers,
+    ui::{board::Board, menu::Menu, popup::Popup, status_bar::StatusBar},
 };
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum Modes {
+pub enum InputModes {
     Normal,
     Insert,
 }
 
-impl fmt::Display for Modes {
+#[derive(Debug, Clone, Copy, PartialEq, serde::Serialize, serde::Deserialize)]
+pub enum Endings {
+    Victory,
+    Loss,
+}
+
+impl fmt::Display for InputModes {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mode = match self {
-            Modes::Normal => "Normal",
-            Modes::Insert => "Insert",
+            InputModes::Normal => "Normal",
+            InputModes::Insert => "Insert",
         };
 
         write!(f, "{}", mode)
@@ -35,15 +48,25 @@ impl fmt::Display for Modes {
 
 #[derive(Debug)]
 pub struct App {
+    secret_word: String,
     menu: Menu,
+    games_stats: GamesStats,
     board_state: BoardState,
-    mode: Modes,
-    dictionnary: Dictionnary,
+    input_mode: InputModes,
     exit: bool,
 }
 
 impl App {
     pub fn run(&mut self, terminal: &mut DefaultTerminal) -> Result<()> {
+        self.games_stats = GamesStats::load()?;
+
+        // init board_state if we already played today
+        if self.games_stats.current_game.has_attemps() {
+            // add attemps to board_state
+            let attempts = &self.games_stats.current_game.attempts;
+            self.board_state.build_current_game(attempts);
+        }
+
         while !self.exit {
             terminal.draw(|frame| self.draw(frame))?;
             self.handle_events()?
@@ -57,7 +80,7 @@ impl App {
             if let Event::Key(event) = event::read()?
                 && event.kind == KeyEventKind::Press
             {
-                self.handle_key_pressed(event.code)
+                self.handle_key_pressed(event.code)?
             }
         } else if let Some(i) = self.board_state.highlight_until
             && Instant::now() > i
@@ -84,31 +107,56 @@ impl App {
         let board = Board::new();
         frame.render_stateful_widget(&board, mid, &mut self.board_state);
 
-        let sb = StatusBar::new(&self.mode);
+        let sb = StatusBar::new(&self.input_mode);
         frame.render_widget(&sb, bottom);
+
+        if let Some(ending) = self.games_stats.current_game.ending {
+            let popup_area = helpers::centered_rect(50, 35, frame.area());
+            frame.render_widget(ratatui::widgets::Clear, popup_area);
+            frame.render_widget(&Popup::new(ending, self.games_stats.clone()), popup_area);
+        }
     }
 
-    fn handle_key_pressed(&mut self, code: event::KeyCode) {
-        if self.mode == Modes::Insert {
-            match code {
-                event::KeyCode::Esc => self.normal_mode(),
-                event::KeyCode::Char(c) => self.input(c),
-                event::KeyCode::Backspace => self.delete(),
-                event::KeyCode::Enter => self.submit(),
-                _ => {}
-            }
-        }
-
-        if self.mode == Modes::Normal {
-            match code {
-                event::KeyCode::Char('q') => self.exit(),
-                event::KeyCode::Char('i') => self.insert_mode(),
-                _ => {}
-            }
+    fn handle_key_pressed(&mut self, code: event::KeyCode) -> Result<()> {
+        match self.input_mode {
+            InputModes::Insert => match code {
+                event::KeyCode::Esc => {
+                    self.normal_mode();
+                    Ok(())
+                }
+                event::KeyCode::Char(c) => {
+                    self.input(c);
+                    Ok(())
+                }
+                event::KeyCode::Backspace => {
+                    self.delete();
+                    Ok(())
+                }
+                event::KeyCode::Enter => {
+                    self.submit()?;
+                    Ok(())
+                }
+                _ => Ok(()),
+            },
+            InputModes::Normal => match code {
+                event::KeyCode::Char('q') => {
+                    self.exit();
+                    Ok(())
+                }
+                event::KeyCode::Char('i') => {
+                    self.insert_mode();
+                    Ok(())
+                }
+                _ => Ok(()),
+            },
         }
     }
 
     fn input(&mut self, c: char) {
+        if self.games_stats.current_game.ending.is_some() {
+            return;
+        }
+
         if !c.is_alphabetic() {
             return;
         }
@@ -130,12 +178,16 @@ impl App {
     }
 
     fn normal_mode(&mut self) {
-        self.mode = Modes::Normal;
+        self.input_mode = InputModes::Normal;
         self.board_state.current_tile().state = TileState::Empty;
     }
 
     fn insert_mode(&mut self) {
-        self.mode = Modes::Insert;
+        if self.games_stats.current_game.ending.is_some() {
+            return;
+        }
+
+        self.input_mode = InputModes::Insert;
         self.board_state.current_tile().state = TileState::Typing;
     }
 
@@ -145,11 +197,12 @@ impl App {
 
     pub fn new() -> Self {
         Self {
+            secret_word: Dictionnary::new().get_word_for_day(Utc::now().date_naive()),
             menu: Menu,
             board_state: BoardState::new(),
-            mode: Modes::Normal,
-            dictionnary: Dictionnary::new(),
+            input_mode: InputModes::Normal,
             exit: false,
+            games_stats: GamesStats::default(),
         }
     }
 
@@ -165,30 +218,56 @@ impl App {
         }
     }
 
-    fn submit(&mut self) {
+    fn submit(&mut self) -> Result<()> {
         if self.board_state.current_col < 4 {
             self.board_state.highlight_empty_tiles();
-            return;
+            return Ok(());
         }
 
+        let validator = Validator::new(self.secret_word.clone());
         let word = self.board_state.get_current_row_word();
-        let secret_word = self.dictionnary.get_word_for_day(Utc::now().date_naive());
-        let validator = Validator::new(secret_word);
-        let validation_result = validator.validate(word);
-        let current_row = &mut self.board_state.tiles[self.board_state.current_row];
+        let validation_result = validator.validate(&word);
 
-        match validation_result {
-            Ok(result_states) => {
+        match &validation_result {
+            Ok(result) => {
+                self.games_stats.current_game.attempts.push(word);
+
+                let has_won = result
+                    .iter()
+                    .position(|r| *r != TileState::Correct)
+                    .is_none();
+                let has_lost = !has_won && self.games_stats.current_game.attempts.len() >= 2;
+
+                if has_won || has_lost {
+                    // handle_victory
+                    if has_won {
+                        self.games_stats.current_game.ending = Some(Endings::Victory);
+                    }
+
+                    // handle loss
+                    if has_lost {
+                        self.games_stats.current_game.ending = Some(Endings::Loss);
+                    }
+
+                    self.input_mode = InputModes::Normal;
+                    self.games_stats.current_game.secret_word = self.secret_word.clone();
+                    self.games_stats.save()?;
+                }
+
+                // propagate tiles states
+                let current_row = self.board_state.get_current_row();
                 for index in 0..5 {
-                    current_row[index].state = result_states[index]
+                    current_row[index].state = result[index];
                 }
 
                 self.board_state.go_next_line();
+                Ok(())
             }
-            Err(SubmissionError::NotInDictionnary) => {
+            Err(e) if *e == SubmissionError::NotInDictionnary => {
                 self.board_state.highlight_all_tiles();
-            },
-            _ => (),
+                Ok(())
+            }
+            _ => Ok(()),
         }
     }
 }

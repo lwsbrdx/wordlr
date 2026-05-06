@@ -5,6 +5,7 @@ use crate::game::tile::{Tile, TileState};
 
 #[derive(Debug)]
 pub struct BoardState {
+    pub attemps: Vec<String>,
     pub tiles: [[Tile; 5]; 6],
     pub current_row: usize,
     pub current_col: usize,
@@ -14,6 +15,7 @@ pub struct BoardState {
 impl BoardState {
     pub fn new() -> Self {
         Self {
+            attemps: Vec::new(),
             tiles: [[Tile::default(); 5]; 6],
             current_row: 0,
             current_col: 0,
@@ -56,6 +58,10 @@ impl BoardState {
         self.current_tile().state = TileState::Empty;
         self.current_col -= 1;
         self.current_tile().state = TileState::Typing;
+    }
+
+    pub fn get_current_row(&mut self) -> &mut [Tile; 5] {
+        &mut self.tiles[self.current_row]
     }
 
     pub fn get_current_row_word(&self) -> String {
@@ -101,6 +107,21 @@ impl BoardState {
             });
 
         self.highlight_until = None;
+    }
+
+    pub(crate) fn build_current_game(&mut self, attempts: &[String]) {
+        attempts.iter().enumerate().for_each(|(index, attempt)| {
+            let chars = attempt.chars().collect::<Vec<char>>();
+            let curr_row = self.get_current_row();
+
+            for i in 0..5 {
+                curr_row[i].letter = Some(chars[i]);
+            }
+
+            if index < 5 {
+                self.go_next_line();
+            }
+        });
     }
 }
 

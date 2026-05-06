@@ -5,6 +5,8 @@ edition = "2024"
 
 [dependencies]
 chrono = "0.4.44"
+dirs = "6.0.0"
 ratatui = "0.30.0"
 seeded-random = "0.6.0"
+serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0.149"

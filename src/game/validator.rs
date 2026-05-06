@@ -11,7 +11,7 @@ pub enum SubmissionError {
 }
 
 impl Validator {
-    pub fn validate(&self, submitted_word: String) -> Result<Vec<TileState>, SubmissionError> {
+    pub fn validate(&self, submitted_word: &str) -> Result<Vec<TileState>, SubmissionError> {
         if submitted_word.len() < 5 {
             return Err(SubmissionError::TooShort);
         }
@@ -54,7 +54,9 @@ impl Validator {
     }
 
     pub fn new(arg: String) -> Self {
-        Self { secret_word: arg.to_owned() }
+        Self {
+            secret_word: arg.to_owned(),
+        }
     }
 }
 
@@ -67,7 +69,7 @@ mod tests {
     #[test]
     fn test_submission_too_short() {
         let v = Validator::new("POMME".to_owned());
-        let result = v.validate("LONG".to_owned());
+        let result = v.validate("LONG");
 
         assert!(result.is_err());
         assert_eq!(Err(SubmissionError::TooShort), result);
@@ -79,7 +81,7 @@ mod tests {
             secret_word: "POILS".to_owned(),
         };
 
-        let returned = v.validate("PALME".to_owned());
+        let returned = v.validate("PALME");
         if let Ok(r) = returned {
             assert_eq!(r[0], TileState::Correct);
             assert_eq!(r[1], TileState::Absent);
@@ -88,7 +90,7 @@ mod tests {
             assert_eq!(r[4], TileState::Absent);
         }
 
-        let returned = v.validate("POIRE".to_owned());
+        let returned = v.validate("POIRE");
         if let Ok(r) = returned {
             assert_eq!(r[0], TileState::Correct);
             assert_eq!(r[1], TileState::Correct);
@@ -97,7 +99,7 @@ mod tests {
             assert_eq!(r[4], TileState::Absent);
         }
 
-        let returned = v.validate("POILS".to_owned());
+        let returned = v.validate("POILS");
         if let Ok(r) = returned {
             assert_eq!(r[0], TileState::Correct);
             assert_eq!(r[1], TileState::Correct);
@@ -111,7 +113,7 @@ mod tests {
     fn test_validate_multiple_times_same_letter() {
         let v = Validator::new("POMME".to_owned());
 
-        let returned = v.validate("PALME".to_owned());
+        let returned = v.validate("PALME");
         if let Ok(r) = returned {
             assert_eq!(r[0], TileState::Correct);
             assert_eq!(r[1], TileState::Absent);
@@ -120,7 +122,7 @@ mod tests {
             assert_eq!(r[4], TileState::Correct);
         }
 
-        let returned = v.validate("POMME".to_owned());
+        let returned = v.validate("POMME");
         if let Ok(r) = returned {
             assert_eq!(r[0], TileState::Correct);
             assert_eq!(r[1], TileState::Correct);

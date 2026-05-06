@@ -5,15 +5,15 @@ use ratatui::{
     widgets::{Block, Padding, Paragraph, Widget},
 };
 
-use crate::app::Modes;
+use crate::app::InputModes;
 
 #[derive(Debug)]
 pub struct StatusBar<'a> {
-    current_mode: &'a Modes,
+    current_mode: &'a InputModes,
 }
 
 impl<'a> StatusBar<'a> {
-    pub fn new(mode: &'a Modes) -> Self {
+    pub fn new(mode: &'a InputModes) -> Self {
         Self { current_mode: mode }
     }
 }
@@ -30,8 +30,8 @@ impl<'a> Widget for &StatusBar<'a> {
         let current_mode_block = Block::new()
             .padding(Padding::left(1))
             .style(Style::new().bg(match self.current_mode {
-                Modes::Normal => Color::DarkGray,
-                Modes::Insert => Color::Green,
+                InputModes::Normal => Color::DarkGray,
+                InputModes::Insert => Color::Green,
             }));
 
         Paragraph::new(Text::styled(
@@ -45,8 +45,8 @@ impl<'a> Widget for &StatusBar<'a> {
         let help_block = Block::new().padding(Padding::left(1));
         Paragraph::new(Text::styled(
             match self.current_mode {
-                Modes::Normal => "Press i to enter Insert mode",
-                Modes::Insert => "Press Esc to enter Normal mode",
+                InputModes::Normal => "Press i to enter Insert mode",
+                InputModes::Insert => "Press Esc to enter Normal mode",
             },
             Style::default().fg(Color::DarkGray),
         ))

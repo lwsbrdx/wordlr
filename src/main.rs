@@ -1,5 +1,6 @@
 mod app;
 mod game;
+mod helpers;
 mod ui;
 
 use crate::app::App;
