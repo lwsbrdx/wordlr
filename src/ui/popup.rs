@@ -49,7 +49,7 @@ impl Widget for &Popup {
 impl Popup {
     fn draw_stats(&self, top_area: ratatui::prelude::Rect, buf: &mut ratatui::prelude::Buffer) {
         let [title_layout, stats_layout] =
-            Layout::vertical([Constraint::Length(1), Constraint::Length(7)]).areas(top_area);
+            Layout::vertical([Constraint::Length(1), Constraint::Length(5)]).areas(top_area);
 
         let stat_block = Block::bordered().border_type(BorderType::Rounded);
 
@@ -78,7 +78,7 @@ impl Popup {
 
         let win_rate = self.games_stats.get_win_rate() * 100.0;
         Paragraph::new(vec![
-            Line::from(format!("{win_rate}")),
+            Line::from(format!("{win_rate:.2}")),
             Line::from(""),
             Line::from("Victoire (%)"),
         ])
