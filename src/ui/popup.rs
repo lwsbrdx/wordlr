@@ -86,7 +86,7 @@ impl Popup {
         .block(stat_block.clone())
         .render(top_stats_victories_ratio, buf);
 
-        let actual_serie = 4; // TODO
+        let actual_serie = self.games_stats.get_actual_serie();
         Paragraph::new(vec![
             Line::from(format!("{actual_serie}")),
             Line::from("Série"),

@@ -129,6 +129,17 @@ impl GamesStats {
 
         max_serie
     }
+
+    pub(crate) fn get_actual_serie(&self) -> u16 {
+        let mut iter = self.previous_games.iter().chain(vec![&self.current_game]).rev();
+        let mut serie = 0;
+
+        while let Some(g) = iter.next() && g.ending == Some(Endings::Victory) {
+            serie += 1;
+        }
+
+        serie
+    }
 }
 
 impl GameStats {
