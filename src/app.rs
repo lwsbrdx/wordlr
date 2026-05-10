@@ -23,6 +23,8 @@ use crate::{
     ui::{board::Board, menu::Menu, popup::Popup, status_bar::StatusBar},
 };
 
+const MAX_ATTEMPTS: usize = 6;
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum InputModes {
     Normal,
@@ -236,7 +238,7 @@ impl App {
                     .iter()
                     .position(|r| *r != TileState::Correct)
                     .is_none();
-                let has_lost = !has_won && self.games_stats.current_game.attempts.len() >= 2;
+                let has_lost = !has_won && self.games_stats.current_game.attempts.len() >= MAX_ATTEMPTS;
 
                 if has_won || has_lost {
                     // handle_victory
