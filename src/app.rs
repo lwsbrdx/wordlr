@@ -112,10 +112,10 @@ impl App {
         let sb = StatusBar::new(&self.input_mode);
         frame.render_widget(&sb, bottom);
 
-        if let Some(ending) = self.games_stats.current_game.ending {
+        if self.games_stats.current_game.ending.is_some() {
             let popup_area = helpers::centered_rect(50, 35, frame.area());
             frame.render_widget(ratatui::widgets::Clear, popup_area);
-            frame.render_widget(&Popup::new(ending, self.games_stats.clone()), popup_area);
+            frame.render_widget(&Popup::new(self.games_stats.clone()), popup_area);
         }
     }
 

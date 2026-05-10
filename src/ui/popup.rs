@@ -5,17 +5,15 @@ use ratatui::{
     widgets::{Block, BorderType, Gauge, Paragraph, Widget},
 };
 
-use crate::{app::Endings, game::game_stats::GamesStats};
+use crate::game::game_stats::GamesStats;
 
 pub(crate) struct Popup {
-    ending: Endings,
     games_stats: GamesStats,
 }
 
 impl Popup {
-    pub fn new(ending: Endings, games_stats: GamesStats) -> Self {
+    pub fn new(games_stats: GamesStats) -> Self {
         Self {
-            ending,
             games_stats,
         }
     }
