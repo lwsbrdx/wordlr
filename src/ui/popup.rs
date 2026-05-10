@@ -96,7 +96,7 @@ impl Popup {
         .block(stat_block.clone())
         .render(top_stats_victories_serie, buf);
 
-        let best_serie = 4; // TODO
+        let best_serie = self.games_stats.get_best_serie();
         Paragraph::new(vec![
             Line::from(format!("{best_serie}")),
             Line::from("Meilleurs"),

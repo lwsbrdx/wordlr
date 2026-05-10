@@ -110,6 +110,25 @@ impl GamesStats {
             .count() as f32
             / all_games_iter.count() as f32
     }
+
+    pub(crate) fn get_best_serie(&self) -> u16 {
+        let mut max_serie = 0;
+        let mut current_serie = 0;
+
+        self.previous_games.iter().chain(vec![&self.current_game]).for_each(|game| {
+            if game.ending == Some(Endings::Victory) {
+                current_serie += 1;
+            } else {
+                current_serie = 0;
+            }
+
+            if current_serie > max_serie {
+                max_serie = current_serie;
+            }
+        });
+
+        max_serie
+    }
 }
 
 impl GameStats {
