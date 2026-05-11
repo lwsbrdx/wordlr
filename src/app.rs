@@ -122,7 +122,7 @@ impl App {
         }
 
         if self.help_visible {
-            let help_area = helpers::centered_rect(60, 85, frame.area());
+            let help_area = helpers::centered_rect(60, 65, frame.area());
             frame.render_widget(ratatui::widgets::Clear, help_area);
             frame.render_widget(&Help, help_area);
         }
