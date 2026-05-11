@@ -23,6 +23,18 @@ impl BoardState {
         }
     }
 
+    pub(crate) fn lines(&self) -> Vec<String> {
+        let mut words = vec![];
+        for i in 0..5 {
+            let word = self.tiles[i].iter().filter_map(|t| t.letter).collect::<String>();
+            if word.is_empty() {
+                continue
+            }
+            words.push(word);
+        }
+        words
+    }
+
     pub fn go_next_line(&mut self) {
         if self.current_row >= 5 {
             return;
