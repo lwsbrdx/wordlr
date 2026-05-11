@@ -7,7 +7,7 @@ use std::{
 use chrono::{NaiveDate, Utc};
 use serde_json::Error;
 
-use crate::app::Endings;
+use crate::{app::Endings, game::dictionnary::Dictionnary};
 
 #[derive(Debug, Default, Clone, serde::Serialize, serde::Deserialize)]
 pub(crate) struct GameStats {
@@ -20,7 +20,7 @@ pub(crate) struct GameStats {
 #[derive(Debug, Default, Clone, serde::Serialize, serde::Deserialize)]
 pub(crate) struct GamesStats {
     pub current_game: GameStats,
-    pub previous_games: Vec<GameStats>,
+    pub all_games: Vec<GameStats>,
 }
 
 impl GamesStats {
@@ -50,62 +50,57 @@ impl GamesStats {
         let json_path = Self::check_paths()?;
 
         let json_content = std::fs::read_to_string(json_path)?;
-        let previous_games: Vec<GameStats> =
+        let mut all_games: Vec<GameStats> =
             serde_json::from_str(&json_content).map_err(to_io_err)?;
-        let current_game = if let Some(todays_game) = previous_games
+        let current_game = if let Some(todays_game) = all_games
             .iter()
             .find(|pg| pg.date == Utc::now().format("%Y-%m-%d").to_string())
         {
             todays_game.clone()
         } else {
-            GameStats::new()
+            GameStats::new(None)
         };
 
-        let mut previous_games: Vec<GameStats> = previous_games
-            .iter()
-            .filter(|pg| pg.date != current_game.date)
-            .cloned()
-            .collect();
-
-        previous_games.sort_by(|pga, pgb| {
-            let pga_date = NaiveDate::from_str(&pga.date);
-            let pgb_date = NaiveDate::from_str(&pgb.date);
-
-            if let Ok(pga_date) = pga_date
-                && let Ok(pgb_date) = pgb_date
-            {
-                return pga_date.cmp(&pgb_date);
-            }
-
-            std::cmp::Ordering::Equal
-        });
+        all_games.sort_by_date();
 
         Ok(Self {
             current_game,
-            previous_games,
+            all_games,
         })
     }
 
-    pub(crate) fn save(&self) -> io::Result<()> {
+    pub(crate) fn save(&mut self) -> io::Result<()> {
         let json_path = Self::check_paths()?;
-        let mut games = self.previous_games.clone();
-        games.push(self.current_game.clone());
 
-        let json_content = serde_json::to_string(&games).map_err(to_io_err)?;
+        let mut game_added = false;
+        for g in self.all_games.iter_mut() {
+            if g.date == self.current_game.date && !self.current_game.attempts.eq(&g.attempts) {
+                *g = self.current_game.clone();
+                game_added = true;
+            }
+        }
+
+        if !game_added {
+            self.all_games.push(self.current_game.clone());
+        }
+
+        self.all_games.sort_by_date();
+
+        let json_content = serde_json::to_string(&self.all_games.clone()).map_err(to_io_err)?;
         std::fs::write(json_path, json_content)?;
 
         Ok(())
     }
 
     pub(crate) fn get_total_games(&self) -> usize {
-        self.previous_games
+        self.all_games
             .iter()
             .chain(vec![&self.current_game])
             .count()
     }
 
     pub(crate) fn get_win_rate(&self) -> f32 {
-        let all_games_iter = self.previous_games.iter().chain(vec![&self.current_game]);
+        let all_games_iter = self.all_games.iter().chain(vec![&self.current_game]);
 
         all_games_iter
             .clone()
@@ -118,7 +113,7 @@ impl GamesStats {
         let mut max_serie = 0;
         let mut current_serie = 0;
 
-        self.previous_games
+        self.all_games
             .iter()
             .chain(vec![&self.current_game])
             .for_each(|game| {
@@ -137,11 +132,7 @@ impl GamesStats {
     }
 
     pub(crate) fn get_actual_serie(&self) -> u16 {
-        let mut iter = self
-            .previous_games
-            .iter()
-            .chain(vec![&self.current_game])
-            .rev();
+        let mut iter = self.all_games.iter().chain(vec![&self.current_game]).rev();
         let mut serie = 0;
 
         while let Some(g) = iter.next()
@@ -154,18 +145,25 @@ impl GamesStats {
     }
 
     pub(crate) fn get_games_by_attempts_count(&self, number_attempts: usize) -> Vec<&GameStats> {
-        let iter = self.previous_games.iter().chain(vec![&self.current_game]);
-        iter.filter(|g| g.attempts.len() == number_attempts).collect()
+        let iter = self.all_games.iter().chain(vec![&self.current_game]);
+        iter.filter(|g| g.attempts.len() == number_attempts)
+            .collect()
     }
 }
 
 impl GameStats {
-    pub(crate) fn new() -> Self {
+    pub(crate) fn new(date: Option<NaiveDate>) -> Self {
+        let date = if let Some(date) = date {
+            date
+        } else {
+            Utc::now().date_naive()
+        };
+
         Self {
             attempts: Vec::new(),
             ending: None,
-            secret_word: "".to_owned(),
-            date: Utc::now().date_naive().format("%Y-%m-%d").to_string(),
+            secret_word: Dictionnary::new().get_word_for_day(date).to_owned(),
+            date: date.format("%Y-%m-%d").to_string(),
         }
     }
 
@@ -175,6 +173,27 @@ impl GameStats {
 
     pub(crate) fn has_attempts(&self) -> bool {
         !self.attempts.is_empty()
+    }
+}
+
+trait SortByDate {
+    fn sort_by_date(&mut self);
+}
+
+impl SortByDate for Vec<GameStats> {
+    fn sort_by_date(&mut self) {
+        self.sort_by(|pga, pgb| {
+            let pga_date = NaiveDate::from_str(&pga.date);
+            let pgb_date = NaiveDate::from_str(&pgb.date);
+
+            if let Ok(pga_date) = pga_date
+                && let Ok(pgb_date) = pgb_date
+            {
+                return pga_date.cmp(&pgb_date);
+            }
+
+            std::cmp::Ordering::Equal
+        });
     }
 }
 

@@ -4,18 +4,19 @@ use std::{
     time::{Duration, Instant},
 };
 
-use chrono::Utc;
+use chrono::{Days, NaiveDate, Utc};
 use ratatui::{
     DefaultTerminal, Frame,
     crossterm::event::{self, Event, KeyEventKind},
     layout::{Constraint, Flex, Layout},
+    text::Line,
+    widgets::Paragraph,
 };
 
 use crate::{
     game::{
         board::BoardState,
-        dictionnary::Dictionnary,
-        game_stats::GamesStats,
+        game_stats::{GameStats, GamesStats},
         tile::TileState,
         validator::{SubmissionError, Validator},
     },
@@ -50,8 +51,8 @@ impl fmt::Display for InputModes {
 
 #[derive(Debug)]
 pub struct App {
-    secret_word: String,
     menu: Menu,
+    selected_date: NaiveDate,
     games_stats: GamesStats,
     board_state: BoardState,
     input_mode: InputModes,
@@ -62,22 +63,23 @@ pub struct App {
 
 impl App {
     pub fn run(&mut self, terminal: &mut DefaultTerminal) -> Result<()> {
-        self.games_stats = GamesStats::load()?;
-
-        // init board_state if we already played today
-        if self.games_stats.current_game.has_attempts() {
-            // add attemps to board_state
-            let attempts = &self.games_stats.current_game.attempts;
-            self.board_state
-                .init(attempts, self.games_stats.current_game.secret_word.clone());
-        }
-
         while !self.exit {
             terminal.draw(|frame| self.draw(frame))?;
             self.handle_events()?
         }
 
         Ok(())
+    }
+
+    fn init_board_state(&mut self) {
+        self.board_state = BoardState::new();
+
+        if self.games_stats.current_game.has_attempts() {
+            // add attemps to board_state
+            let attempts = &self.games_stats.current_game.attempts;
+            self.board_state
+                .init(attempts, self.games_stats.current_game.secret_word.clone());
+        }
     }
 
     fn handle_events(&mut self) -> Result<()> {
@@ -172,7 +174,7 @@ impl App {
                 Ok(())
             }
             event::KeyCode::Right => {
-                // self.next_date();
+                self.next_date();
                 Ok(())
             }
             _ => Ok(()),
@@ -244,17 +246,24 @@ impl App {
         self.exit = true;
     }
 
-    pub fn new() -> Self {
-        Self {
-            secret_word: Dictionnary::new().get_word_for_day(Utc::now().date_naive()),
+    pub fn new() -> Result<Self> {
+        let games_stats = GamesStats::load()?;
+
+        let mut s = Self {
             menu: Menu,
+            selected_date: Utc::now().date_naive(),
             board_state: BoardState::new(),
             input_mode: InputModes::Normal,
             help_visible: false,
             stats_visible: false,
             exit: false,
-            games_stats: GamesStats::default(),
-        }
+            games_stats,
+        };
+
+        // init board_state if we already played today
+        s.init_board_state();
+
+        Ok(s)
     }
 
     fn delete(&mut self) {
@@ -279,7 +288,7 @@ impl App {
     }
 
     fn validate(&mut self) -> Result<()> {
-        let validator = Validator::new(self.secret_word.clone());
+        let validator = Validator::new(self.games_stats.current_game.secret_word.clone());
         let word = self.board_state.get_current_row_word();
         let validation_result = validator.validate(&word);
 
@@ -288,7 +297,7 @@ impl App {
                 self.games_stats.current_game.add_attempts(word);
 
                 // propagate tiles states
-                self.update_board_state(result);
+                self.update_board_tiles(result);
 
                 self.handle_ending(result)?;
                 Ok(())
@@ -301,12 +310,13 @@ impl App {
         }
     }
 
-    fn update_board_state(&mut self, result: &[TileState]) {
+    fn update_board_tiles(&mut self, result: &[TileState]) {
         let current_row = self.board_state.get_current_row();
         for index in 0..5 {
             current_row[index].state = result[index];
         }
         self.board_state.go_next_line();
+
         if self.input_mode == InputModes::Insert {
             self.board_state.current_tile().state = TileState::Typing;
         }
@@ -330,17 +340,48 @@ impl App {
                 self.games_stats.current_game.ending = Some(Endings::Loss);
             }
 
-            self.input_mode = InputModes::Normal;
-            self.games_stats.current_game.secret_word = self.secret_word.clone();
+            self.normal_mode();
             self.games_stats.save()?;
         }
 
         Ok(())
     }
-}
 
-impl Default for App {
-    fn default() -> Self {
-        Self::new()
+    fn previous_date(&mut self) {
+        if let Some(substracted_date) = self.selected_date.checked_sub_days(Days::new(1)) {
+            self.selected_date = substracted_date;
+            self.on_date_changed(substracted_date);
+        }
+    }
+
+    fn next_date(&mut self) {
+        let min_date = Some(Utc::now().date_naive());
+        if let Some(added_date) = self
+            .selected_date
+            .checked_add_days(Days::new(1))
+            .min(min_date)
+        {
+            self.selected_date = added_date;
+            self.on_date_changed(added_date);
+        }
+    }
+
+    fn on_date_changed(&mut self, new_date: NaiveDate) {
+        self.update_games_stats_after_date_change(new_date);
+        self.init_board_state();
+    }
+
+    fn update_games_stats_after_date_change(&mut self, new_date: NaiveDate) {
+        let found_option = self
+            .games_stats
+            .all_games
+            .iter()
+            .find(|g| g.date == new_date.format("%Y-%m-%d").to_string());
+        if let Some(game) = found_option {
+            self.games_stats.current_game = game.clone();
+        } else {
+            self.games_stats.current_game = GameStats::new(Some(new_date))
+        }
     }
 }
+
