@@ -20,7 +20,7 @@ use crate::{
         validator::{SubmissionError, Validator},
     },
     helpers,
-    ui::{board::Board, menu::Menu, popup::Popup, status_bar::StatusBar},
+    ui::{board::Board, help::Help, menu::Menu, popup::Popup, status_bar::StatusBar},
 };
 
 const MAX_ATTEMPTS: usize = 6;
@@ -55,6 +55,7 @@ pub struct App {
     games_stats: GamesStats,
     board_state: BoardState,
     input_mode: InputModes,
+    help_visible: bool,
     exit: bool,
 }
 
@@ -117,9 +118,22 @@ impl App {
             frame.render_widget(ratatui::widgets::Clear, popup_area);
             frame.render_widget(&Popup::new(self.games_stats.clone()), popup_area);
         }
+
+        if self.help_visible {
+            let help_area = helpers::centered_rect(60, 85, frame.area());
+            frame.render_widget(ratatui::widgets::Clear, help_area);
+            frame.render_widget(&Help, help_area);
+        }
     }
 
     fn handle_key_pressed(&mut self, code: event::KeyCode) -> Result<()> {
+        if self.help_visible {
+            if code == event::KeyCode::Esc {
+                self.help_visible = false;
+            }
+            return Ok(());
+        }
+
         match self.input_mode {
             InputModes::Insert => match code {
                 event::KeyCode::Esc => {
@@ -147,6 +161,10 @@ impl App {
                 }
                 event::KeyCode::Char('i') => {
                     self.insert_mode();
+                    Ok(())
+                }
+                event::KeyCode::Char('?') => {
+                    self.help_visible = true;
                     Ok(())
                 }
                 _ => Ok(()),
@@ -203,6 +221,7 @@ impl App {
             menu: Menu,
             board_state: BoardState::new(),
             input_mode: InputModes::Normal,
+            help_visible: false,
             exit: false,
             games_stats: GamesStats::default(),
         }
