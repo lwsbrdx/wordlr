@@ -1,6 +1,6 @@
 use ratatui::{
     layout::{Constraint, Layout},
-    style::{Color, Style, Stylize},
+    style::{Style, Stylize},
     text::Line,
     widgets::{Block, BorderType, Gauge, Padding, Paragraph, Widget},
 };
@@ -25,8 +25,11 @@ impl Widget for &Popup {
         let outer_block = Block::bordered()
             .padding(Padding::new(2, 2, 1, 1))
             .border_type(BorderType::Rounded)
-            .border_style(Style::new().green())
-            .style(Style::default().bg(Color::Black));
+            .border_style(match self.games_stats.current_game.ending {
+                Some(crate::app::Endings::Victory) => Style::new().green(),
+                Some(crate::app::Endings::Loss) => Style::new().red(),
+                _ => Style::new().white(),
+            });
         let inner_block = outer_block.inner(area);
         let [top, mid, bottom] = Layout::vertical([
             Constraint::Length(8),
@@ -142,12 +145,11 @@ impl Popup {
 
                 let percentage =
                     (games_w_attempts as f32 / all_games_count as f32 * 100.0).max(2.0);
-                let gauge_style = Style::new();
                 let g = Gauge::default()
                     .gauge_style(if tx == current_game_attempts {
-                        gauge_style.green()
+                        Style::new().green()
                     } else {
-                        gauge_style.dark_gray()
+                        Style::new().dark_gray()
                     })
                     .percent(percentage as u16)
                     .label("");
