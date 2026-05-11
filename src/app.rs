@@ -65,7 +65,7 @@ impl App {
         self.games_stats = GamesStats::load()?;
 
         // init board_state if we already played today
-        if self.games_stats.current_game.has_attemps() {
+        if self.games_stats.current_game.has_attempts() {
             // add attemps to board_state
             let attempts = &self.games_stats.current_game.attempts;
             self.board_state
@@ -259,44 +259,22 @@ impl App {
             return Ok(());
         }
 
+        self.validate()
+    }
+
+    fn validate(&mut self) -> Result<()> {
         let validator = Validator::new(self.secret_word.clone());
         let word = self.board_state.get_current_row_word();
         let validation_result = validator.validate(&word);
 
         match &validation_result {
             Ok(result) => {
-                self.games_stats.current_game.attempts.push(word);
-
-                let has_won = result
-                    .iter()
-                    .position(|r| *r != TileState::Correct)
-                    .is_none();
-                let has_lost =
-                    !has_won && self.games_stats.current_game.attempts.len() >= MAX_ATTEMPTS;
-
-                if has_won || has_lost {
-                    // handle_victory
-                    if has_won {
-                        self.games_stats.current_game.ending = Some(Endings::Victory);
-                    }
-
-                    // handle loss
-                    if has_lost {
-                        self.games_stats.current_game.ending = Some(Endings::Loss);
-                    }
-
-                    self.input_mode = InputModes::Normal;
-                    self.games_stats.current_game.secret_word = self.secret_word.clone();
-                    self.games_stats.save()?;
-                }
+                self.games_stats.current_game.add_attempts(word);
 
                 // propagate tiles states
-                let current_row = self.board_state.get_current_row();
-                for index in 0..5 {
-                    current_row[index].state = result[index];
-                }
+                self.update_board_state(result);
 
-                self.board_state.go_next_line();
+                self.handle_ending(result)?;
                 Ok(())
             }
             Err(e) if *e == SubmissionError::NotInDictionnary => {
@@ -305,6 +283,40 @@ impl App {
             }
             _ => Ok(()),
         }
+    }
+
+    fn update_board_state(&mut self, result: &[TileState]) {
+        let current_row = self.board_state.get_current_row();
+        for index in 0..5 {
+            current_row[index].state = result[index];
+        }
+        self.board_state.go_next_line();
+    }
+
+    fn handle_ending(&mut self, result: &[TileState]) -> Result<()> {
+        let has_won = result
+            .iter()
+            .position(|r| *r != TileState::Correct)
+            .is_none();
+        let has_lost = !has_won && self.games_stats.current_game.attempts.len() >= MAX_ATTEMPTS;
+
+        if has_won || has_lost {
+            // handle_victory
+            if has_won {
+                self.games_stats.current_game.ending = Some(Endings::Victory);
+            }
+
+            // handle loss
+            if has_lost {
+                self.games_stats.current_game.ending = Some(Endings::Loss);
+            }
+
+            self.input_mode = InputModes::Normal;
+            self.games_stats.current_game.secret_word = self.secret_word.clone();
+            self.games_stats.save()?;
+        }
+
+        Ok(())
     }
 }
 

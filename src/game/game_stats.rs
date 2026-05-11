@@ -169,7 +169,11 @@ impl GameStats {
         }
     }
 
-    pub(crate) fn has_attemps(&self) -> bool {
+    pub(crate) fn add_attempts(&mut self, attempt: String) {
+        self.attempts.push(attempt);
+    }
+
+    pub(crate) fn has_attempts(&self) -> bool {
         !self.attempts.is_empty()
     }
 }
