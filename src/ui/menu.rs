@@ -1,4 +1,6 @@
-use ratatui::widgets::{Block, Padding, Paragraph, Widget};
+use ratatui::
+    widgets::{Block, Padding, Paragraph, Widget}
+;
 
 #[derive(Debug)]
 pub struct Menu;
@@ -22,7 +24,7 @@ impl Widget for &Menu {
     {
         let menu_block = Block::default().padding(Padding::horizontal(2));
 
-        Paragraph::new("Help (?)")
+        Paragraph::new("Quit (q) | Help (?) | Statistics (s)")
             .block(menu_block)
             .render(area, buf);
     }
