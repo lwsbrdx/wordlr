@@ -64,8 +64,6 @@ impl BoardState {
 
         self.current_row += 1;
         self.current_col = 0;
-
-        self.current_tile().state = TileState::Typing;
     }
 
     pub fn current_tile(&mut self) -> &mut Tile {

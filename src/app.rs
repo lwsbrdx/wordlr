@@ -307,6 +307,9 @@ impl App {
             current_row[index].state = result[index];
         }
         self.board_state.go_next_line();
+        if self.input_mode == InputModes::Insert {
+            self.board_state.current_tile().state = TileState::Typing;
+        }
     }
 
     fn handle_ending(&mut self, result: &[TileState]) -> Result<()> {
