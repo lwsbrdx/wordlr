@@ -50,9 +50,9 @@ impl Validator {
         Ok(result)
     }
 
-    pub fn new(arg: String) -> Self {
+    pub fn new(secret_word: String) -> Self {
         Self {
-            secret_word: arg.to_owned(),
+            secret_word: secret_word.to_owned(),
         }
     }
 }
