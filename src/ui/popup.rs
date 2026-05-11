@@ -1,8 +1,8 @@
 use ratatui::{
     layout::{Constraint, Layout},
-    style::{Color, Style},
-    text::{Line, Span},
-    widgets::{Block, BorderType, Gauge, Paragraph, Widget},
+    style::{Color, Style, Stylize},
+    text::Line,
+    widgets::{Block, BorderType, Gauge, Padding, Paragraph, Widget},
 };
 
 use crate::game::game_stats::GamesStats;
@@ -23,22 +23,31 @@ impl Widget for &Popup {
         Self: Sized,
     {
         let outer_block = Block::bordered()
+            .padding(Padding::new(2, 2, 1, 1))
             .border_type(BorderType::Rounded)
             .border_style(Style::new().green())
             .style(Style::default().bg(Color::Black));
         let inner_block = outer_block.inner(area);
         let [top, mid, bottom] = Layout::vertical([
             Constraint::Length(8),
-            Constraint::Length(20),
+            Constraint::Length(15),
             Constraint::Length(2),
         ])
+        .flex(ratatui::layout::Flex::SpaceBetween)
         .areas(inner_block);
 
         outer_block.render(area, buf);
 
         self.draw_stats(top, buf);
         self.draw_performances(mid, buf);
-        Paragraph::new("test").centered().render(bottom, buf);
+
+        let secret_word = &self.games_stats.current_game.secret_word;
+        Paragraph::new(vec![
+            Line::from("Le mot était"),
+            Line::from(secret_word.to_string()).bold(),
+        ])
+        .centered()
+        .render(bottom, buf);
     }
 }
 
@@ -131,7 +140,8 @@ impl Popup {
                 let games_w_attempts = self.games_stats.get_games_by_attempts_count(tx).len();
                 let l = Paragraph::new(format!("{games_w_attempts}")).centered();
 
-                let percentage = (games_w_attempts as f32 / all_games_count as f32 * 100.0).max(2.0);
+                let percentage =
+                    (games_w_attempts as f32 / all_games_count as f32 * 100.0).max(2.0);
                 let gauge_style = Style::new();
                 let g = Gauge::default()
                     .gauge_style(if tx == current_game_attempts {
@@ -141,7 +151,7 @@ impl Popup {
                     })
                     .percent(percentage as u16)
                     .label("");
-                    // .label(format!("{percentage}"));
+                // .label(format!("{percentage}"));
 
                 let [attempts_number, stat_gauge, gauge_label] = Layout::horizontal([
                     Constraint::Length(3),
