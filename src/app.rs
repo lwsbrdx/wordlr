@@ -56,6 +56,7 @@ pub struct App {
     board_state: BoardState,
     input_mode: InputModes,
     help_visible: bool,
+    stats_visible: bool,
     exit: bool,
 }
 
@@ -67,7 +68,8 @@ impl App {
         if self.games_stats.current_game.has_attemps() {
             // add attemps to board_state
             let attempts = &self.games_stats.current_game.attempts;
-            self.board_state.build_current_game(attempts);
+            self.board_state
+                .init(attempts, self.games_stats.current_game.secret_word.clone());
         }
 
         while !self.exit {
@@ -113,7 +115,7 @@ impl App {
         let sb = StatusBar::new(&self.input_mode);
         frame.render_widget(&sb, bottom);
 
-        if self.games_stats.current_game.ending.is_some() {
+        if self.stats_visible {
             let popup_area = helpers::centered_rect(50, 55, frame.area());
             frame.render_widget(ratatui::widgets::Clear, popup_area);
             frame.render_widget(&Popup::new(self.games_stats.clone()), popup_area);
@@ -128,8 +130,15 @@ impl App {
 
     fn handle_key_pressed(&mut self, code: event::KeyCode) -> Result<()> {
         if self.help_visible {
-            if code == event::KeyCode::Esc {
+            if code == event::KeyCode::Esc || code == event::KeyCode::Char('?') {
                 self.help_visible = false;
+            }
+            return Ok(());
+        }
+
+        if self.stats_visible {
+            if code == event::KeyCode::Char('s') || code == event::KeyCode::Char('S') {
+                self.stats_visible = false;
             }
             return Ok(());
         }
@@ -165,6 +174,10 @@ impl App {
                 }
                 event::KeyCode::Char('?') => {
                     self.help_visible = true;
+                    Ok(())
+                }
+                event::KeyCode::Char('s') | event::KeyCode::Char('S') => {
+                    self.stats_visible = true;
                     Ok(())
                 }
                 _ => Ok(()),
@@ -222,6 +235,7 @@ impl App {
             board_state: BoardState::new(),
             input_mode: InputModes::Normal,
             help_visible: false,
+            stats_visible: false,
             exit: false,
             games_stats: GamesStats::default(),
         }
@@ -257,7 +271,8 @@ impl App {
                     .iter()
                     .position(|r| *r != TileState::Correct)
                     .is_none();
-                let has_lost = !has_won && self.games_stats.current_game.attempts.len() >= MAX_ATTEMPTS;
+                let has_lost =
+                    !has_won && self.games_stats.current_game.attempts.len() >= MAX_ATTEMPTS;
 
                 if has_won || has_lost {
                     // handle_victory

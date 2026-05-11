@@ -2,6 +2,7 @@ use std::ops::Add;
 use std::time::{Duration, Instant};
 
 use crate::game::tile::{Tile, TileState};
+use crate::game::validator::Validator;
 
 #[derive(Debug)]
 pub struct BoardState {
@@ -23,12 +24,33 @@ impl BoardState {
         }
     }
 
+    pub(crate) fn init(&mut self, attempts: &[String], secret_word: String) {
+        self.build_current_game(attempts);
+
+        let v = Validator::new(secret_word);
+        self
+            .lines()
+            .iter()
+            .enumerate()
+            .for_each(|(row, l)| {
+                let r = v.validate(l);
+                if let Ok(states) = r {
+                    for (i, s) in states.iter().enumerate() {
+                        self.tiles[row][i].state = *s;
+                    }
+                }
+            });
+    }
+
     pub(crate) fn lines(&self) -> Vec<String> {
         let mut words = vec![];
         for i in 0..5 {
-            let word = self.tiles[i].iter().filter_map(|t| t.letter).collect::<String>();
+            let word = self.tiles[i]
+                .iter()
+                .filter_map(|t| t.letter)
+                .collect::<String>();
             if word.is_empty() {
-                continue
+                continue;
             }
             words.push(word);
         }
@@ -121,7 +143,7 @@ impl BoardState {
         self.highlight_until = None;
     }
 
-    pub(crate) fn build_current_game(&mut self, attempts: &[String]) {
+    fn build_current_game(&mut self, attempts: &[String]) {
         attempts.iter().enumerate().for_each(|(index, attempt)| {
             let chars = attempt.chars().collect::<Vec<char>>();
             let curr_row = self.get_current_row();
