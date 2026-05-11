@@ -98,7 +98,10 @@ impl GamesStats {
     }
 
     pub(crate) fn get_total_games(&self) -> usize {
-        self.previous_games.iter().chain(vec![&self.current_game]).count()
+        self.previous_games
+            .iter()
+            .chain(vec![&self.current_game])
+            .count()
     }
 
     pub(crate) fn get_win_rate(&self) -> f32 {
@@ -115,30 +118,44 @@ impl GamesStats {
         let mut max_serie = 0;
         let mut current_serie = 0;
 
-        self.previous_games.iter().chain(vec![&self.current_game]).for_each(|game| {
-            if game.ending == Some(Endings::Victory) {
-                current_serie += 1;
-            } else {
-                current_serie = 0;
-            }
+        self.previous_games
+            .iter()
+            .chain(vec![&self.current_game])
+            .for_each(|game| {
+                if game.ending == Some(Endings::Victory) {
+                    current_serie += 1;
+                } else {
+                    current_serie = 0;
+                }
 
-            if current_serie > max_serie {
-                max_serie = current_serie;
-            }
-        });
+                if current_serie > max_serie {
+                    max_serie = current_serie;
+                }
+            });
 
         max_serie
     }
 
     pub(crate) fn get_actual_serie(&self) -> u16 {
-        let mut iter = self.previous_games.iter().chain(vec![&self.current_game]).rev();
+        let mut iter = self
+            .previous_games
+            .iter()
+            .chain(vec![&self.current_game])
+            .rev();
         let mut serie = 0;
 
-        while let Some(g) = iter.next() && g.ending == Some(Endings::Victory) {
+        while let Some(g) = iter.next()
+            && g.ending == Some(Endings::Victory)
+        {
             serie += 1;
         }
 
         serie
+    }
+
+    pub(crate) fn get_games_by_attempts_count(&self, number_attempts: usize) -> Vec<&GameStats> {
+        let iter = self.previous_games.iter().chain(vec![&self.current_game]);
+        iter.filter(|g| g.attempts.len() == number_attempts).collect()
     }
 }
 

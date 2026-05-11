@@ -13,9 +13,7 @@ pub(crate) struct Popup {
 
 impl Popup {
     pub fn new(games_stats: GamesStats) -> Self {
-        Self {
-            games_stats,
-        }
+        Self { games_stats }
     }
 }
 
@@ -31,7 +29,7 @@ impl Widget for &Popup {
         let inner_block = outer_block.inner(area);
         let [top, mid, bottom] = Layout::vertical([
             Constraint::Length(8),
-            Constraint::Length(12),
+            Constraint::Length(20),
             Constraint::Length(2),
         ])
         .areas(inner_block);
@@ -111,29 +109,50 @@ impl Popup {
         buf: &mut ratatui::prelude::Buffer,
     ) {
         let [title_layout, performances_layout] =
-            Layout::vertical([Constraint::Length(2), Constraint::Length(14)]).areas(mid_area);
+            Layout::vertical([Constraint::Length(2), Constraint::Length(12)]).areas(mid_area);
 
         Line::from("Performances")
             .left_aligned()
             .render(title_layout, buf);
 
-        let performances_layouts = Layout::vertical([Constraint::Length(1); 13])
-            .spacing(1)
-            .split(performances_layout);
+        let performances_layouts =
+            Layout::vertical([Constraint::Length(1); 12]).split(performances_layout);
+
+        let all_games_count = self.games_stats.get_total_games();
+        let current_game_attempts = self.games_stats.current_game.attempts.len();
 
         performances_layouts
             .iter()
             .enumerate()
-            .for_each(|(index, l)| {
-                let tx = index;
-                let s = Span::from(format!("{tx}"));
-                let g = Gauge::default().style(Style::new().dark_gray()).percent(10);
+            .filter(|(i, _)| i % 2 == 0)
+            .for_each(|(index, rect)| {
+                let tx = index / 2 + 1;
+                let s = Paragraph::new(format!("{tx}")).centered();
+                let games_w_attempts = self.games_stats.get_games_by_attempts_count(tx).len();
+                let l = Paragraph::new(format!("{games_w_attempts}")).centered();
 
-                let [attemps_number, stat_gauge] =
-                    Layout::horizontal([Constraint::Fill(1), Constraint::Percentage(80)]).areas(*l);
+                let percentage = (games_w_attempts as f32 / all_games_count as f32 * 100.0).max(2.0);
+                let gauge_style = Style::new();
+                let g = Gauge::default()
+                    .gauge_style(if tx == current_game_attempts {
+                        gauge_style.green()
+                    } else {
+                        gauge_style.dark_gray()
+                    })
+                    .percent(percentage as u16)
+                    .label("");
+                    // .label(format!("{percentage}"));
 
-                s.render(attemps_number, buf);
+                let [attempts_number, stat_gauge, gauge_label] = Layout::horizontal([
+                    Constraint::Length(3),
+                    Constraint::Length(40),
+                    Constraint::Length(5),
+                ])
+                .areas(*rect);
+
+                s.render(attempts_number, buf);
                 g.render(stat_gauge, buf);
+                l.render(gauge_label, buf);
             });
     }
 }
