@@ -113,7 +113,7 @@ impl App {
         frame.render_widget(&sb, bottom);
 
         if self.games_stats.current_game.ending.is_some() {
-            let popup_area = helpers::centered_rect(50, 50, frame.area());
+            let popup_area = helpers::centered_rect(50, 55, frame.area());
             frame.render_widget(ratatui::widgets::Clear, popup_area);
             frame.render_widget(&Popup::new(self.games_stats.clone()), popup_area);
         }

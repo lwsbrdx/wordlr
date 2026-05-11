@@ -33,8 +33,8 @@ impl Widget for &Popup {
         let inner_block = outer_block.inner(area);
         let [top, mid, bottom] = Layout::vertical([
             Constraint::Length(8),
-            Constraint::Length(15),
-            Constraint::Length(2),
+            Constraint::Length(18),
+            Constraint::Length(4),
         ])
         .flex(ratatui::layout::Flex::SpaceBetween)
         .areas(inner_block);
@@ -48,6 +48,8 @@ impl Widget for &Popup {
         Paragraph::new(vec![
             Line::from("Le mot était"),
             Line::from(secret_word.to_string()).bold(),
+            Line::from(""),
+            Line::from("☕ https://buymeacoffee.com/lwsbrdx").yellow(),
         ])
         .centered()
         .render(bottom, buf);
@@ -57,7 +59,7 @@ impl Widget for &Popup {
 impl Popup {
     fn draw_stats(&self, top_area: ratatui::prelude::Rect, buf: &mut ratatui::prelude::Buffer) {
         let [title_layout, stats_layout] =
-            Layout::vertical([Constraint::Length(1), Constraint::Length(5)]).areas(top_area);
+            Layout::vertical([Constraint::Length(2), Constraint::Length(5)]).areas(top_area);
 
         let stat_block = Block::bordered().border_type(BorderType::Rounded);
 
