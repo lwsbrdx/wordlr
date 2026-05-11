@@ -144,44 +144,60 @@ impl App {
         }
 
         match self.input_mode {
-            InputModes::Insert => match code {
-                event::KeyCode::Esc => {
-                    self.normal_mode();
-                    Ok(())
-                }
-                event::KeyCode::Char(c) => {
-                    self.input(c);
-                    Ok(())
-                }
-                event::KeyCode::Backspace => {
-                    self.delete();
-                    Ok(())
-                }
-                event::KeyCode::Enter => {
-                    self.submit()?;
-                    Ok(())
-                }
-                _ => Ok(()),
-            },
-            InputModes::Normal => match code {
-                event::KeyCode::Char('q') => {
-                    self.exit();
-                    Ok(())
-                }
-                event::KeyCode::Char('i') => {
-                    self.insert_mode();
-                    Ok(())
-                }
-                event::KeyCode::Char('?') => {
-                    self.help_visible = true;
-                    Ok(())
-                }
-                event::KeyCode::Char('s') | event::KeyCode::Char('S') => {
-                    self.stats_visible = true;
-                    Ok(())
-                }
-                _ => Ok(()),
-            },
+            InputModes::Insert => self.handle_insert_mode(code),
+            InputModes::Normal => self.handle_normal_mode(code),
+        }
+    }
+
+    fn handle_normal_mode(&mut self, code: event::KeyCode) -> Result<()> {
+        match code {
+            event::KeyCode::Char('q') => {
+                self.exit();
+                Ok(())
+            }
+            event::KeyCode::Char('i') => {
+                self.insert_mode();
+                Ok(())
+            }
+            event::KeyCode::Char('?') => {
+                self.help_visible = true;
+                Ok(())
+            }
+            event::KeyCode::Char('s') | event::KeyCode::Char('S') => {
+                self.stats_visible = true;
+                Ok(())
+            }
+            event::KeyCode::Left => {
+                self.previous_date();
+                Ok(())
+            }
+            event::KeyCode::Right => {
+                // self.next_date();
+                Ok(())
+            }
+            _ => Ok(()),
+        }
+    }
+
+    fn handle_insert_mode(&mut self, code: event::KeyCode) -> Result<()> {
+        match code {
+            event::KeyCode::Esc => {
+                self.normal_mode();
+                Ok(())
+            }
+            event::KeyCode::Char(c) => {
+                self.input(c);
+                Ok(())
+            }
+            event::KeyCode::Backspace => {
+                self.delete();
+                Ok(())
+            }
+            event::KeyCode::Enter => {
+                self.submit()?;
+                Ok(())
+            }
+            _ => Ok(()),
         }
     }
 
