@@ -1,19 +1,25 @@
-use std::hash::Hasher;
+use std::{hash::Hasher, sync::OnceLock};
 
 use chrono::NaiveDate;
 use seeded_random::{Random, Seed};
 
-const WORDS: &str = include_str!("../dictionnary.json");
+static WORDS:  OnceLock<Vec<String>> = OnceLock::new();
+
+fn words() -> &'static Vec<String> {
+    WORDS.get_or_init(|| {
+        serde_json::from_str(include_str!("../dictionnary.json")).expect("dictionnary.json invalide")
+    })
+}
 
 #[derive(Debug)]
 pub(crate) struct Dictionnary {
-    available_words: Vec<String>,
+    available_words: &'static Vec<String>,
 }
 
 impl Dictionnary {
     pub fn new() -> Self {
         Self {
-            available_words: serde_json::from_str(WORDS).unwrap(),
+            available_words: words(),
         }
     }
 
