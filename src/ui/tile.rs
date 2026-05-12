@@ -23,12 +23,14 @@ impl Widget for &Tile {
     where
         Self: Sized,
     {
+        let color = get_matching_color(self.state);
+
         let block = Block::bordered()
             .border_set(match self.state {
                 TileState::Typing => symbols::border::DOUBLE,
                 _ => symbols::border::PLAIN,
             })
-            .border_style(Style::default().fg(get_matching_color(self.state)));
+            .border_style(Style::default().fg(color));
 
         Paragraph::new(if let Some(l) = self.letter {
             l.to_string()
@@ -36,7 +38,7 @@ impl Widget for &Tile {
             "".to_string()
         })
         .centered()
-        .style(Style::default().fg(get_matching_color(self.state)))
+        .style(Style::default().fg(color))
         .block(block)
         .render(area, buf);
     }
