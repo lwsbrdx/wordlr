@@ -13,12 +13,6 @@ pub(crate) struct Popup {
     date: NaiveDate,
 }
 
-impl Popup {
-    pub fn new(games_stats: GamesStats, date: NaiveDate) -> Self {
-        Self { games_stats, date }
-    }
-}
-
 impl Widget for &Popup {
     fn render(self, area: ratatui::prelude::Rect, buf: &mut ratatui::prelude::Buffer)
     where
@@ -37,7 +31,8 @@ impl Widget for &Popup {
                 _ => Style::new().white(),
             });
         let inner_block = outer_block.inner(area);
-        let [top, mid, bottom] = Layout::vertical([
+        let [title, top, mid, bottom] = Layout::vertical([
+            Constraint::Length(3),
             Constraint::Length(8),
             Constraint::Length(18),
             Constraint::Length(4),
@@ -47,26 +42,21 @@ impl Widget for &Popup {
 
         outer_block.render(area, buf);
 
+        Paragraph::new(format!("{}", self.date.format("%A %d %B %Y")))
+            .centered()
+            .render(title, buf);
+
         self.draw_stats(top, buf);
         self.draw_performances(mid, buf);
-
-        let secret_word = self
-            .games_stats
-            .current_game(self.date)
-            .map(|g| g.secret_word.clone())
-            .unwrap_or_default();
-        Paragraph::new(vec![
-            Line::from("Le mot était"),
-            Line::from(secret_word).bold(),
-            Line::from(""),
-            Line::from("☕ https://buymeacoffee.com/lwsbrdx").yellow(),
-        ])
-        .centered()
-        .render(bottom, buf);
+        self.draw_bottom(bottom, buf);
     }
 }
 
 impl Popup {
+    pub fn new(games_stats: GamesStats, date: NaiveDate) -> Self {
+        Self { games_stats, date }
+    }
+
     fn draw_stats(&self, top_area: ratatui::prelude::Rect, buf: &mut ratatui::prelude::Buffer) {
         let [title_layout, stats_layout] =
             Layout::vertical([Constraint::Length(2), Constraint::Length(5)]).areas(top_area);
@@ -204,6 +194,22 @@ impl Popup {
                 gauge.render(stat_gauge, buf);
                 suffix_paragraph.render(gauge_label, buf);
             });
+    }
+
+    fn draw_bottom(&self, bottom: ratatui::prelude::Rect, buf: &mut ratatui::prelude::Buffer) {
+        let secret_word = self
+            .games_stats
+            .current_game(self.date)
+            .map(|g| g.secret_word.clone())
+            .unwrap_or_default();
+        Paragraph::new(vec![
+            Line::from("Le mot était"),
+            Line::from(secret_word).bold(),
+            Line::from(""),
+            Line::from("☕ https://buymeacoffee.com/lwsbrdx").yellow(),
+        ])
+        .centered()
+        .render(bottom, buf);
     }
 
     fn get_stats_for_attempts(
