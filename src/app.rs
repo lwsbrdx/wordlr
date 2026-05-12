@@ -108,7 +108,7 @@ impl App {
         frame.render_widget(&sb, bottom);
 
         if self.stats_visible {
-            let popup_area = helpers::centered_rect(50, 55, frame.area());
+            let popup_area = helpers::centered_rect(50, 65, frame.area());
             frame.render_widget(ratatui::widgets::Clear, popup_area);
             frame.render_widget(
                 &Popup::new(self.games_stats.clone(), self.selected_date),
@@ -321,10 +321,11 @@ impl App {
             Ok(result) => {
                 self.games_stats.current_game_mut(date).add_attempts(word);
 
+                self.handle_ending(result)?;
+
                 // propagate tiles states
                 self.update_board_tiles(result);
 
-                self.handle_ending(result)?;
                 Ok(())
             }
             Err(e) if *e == SubmissionError::NotInDictionnary => {

@@ -1,7 +1,7 @@
 use chrono::{NaiveDate, Utc};
 
-use crate::game::endings::Endings;
 use crate::game::dictionnary::Dictionnary;
+use crate::game::endings::Endings;
 
 #[derive(Debug, Default, Clone, serde::Serialize, serde::Deserialize)]
 pub(crate) struct GameStats {
@@ -79,10 +79,20 @@ impl GamesStats {
         serie
     }
 
-    pub(crate) fn get_games_by_attempts_count(&self, number_attempts: usize) -> Vec<&GameStats> {
+    pub(crate) fn get_victories_by_attempts_count(
+        &self,
+        number_attempts: usize,
+    ) -> Vec<&GameStats> {
         self.all_games
             .iter()
-            .filter(|g| g.attempts.len() == number_attempts)
+            .filter(|g| g.ending == Some(Endings::Victory) && g.attempts.len() == number_attempts)
+            .collect()
+    }
+
+    pub(crate) fn get_losses(&self) -> Vec<&GameStats> {
+        self.all_games
+            .iter()
+            .filter(|g| g.ending == Some(Endings::Loss))
             .collect()
     }
 }

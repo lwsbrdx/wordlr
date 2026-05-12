@@ -8,11 +8,10 @@ use crate::game::tile::{Tile, TileState};
 
 fn get_matching_color(state: TileState) -> Color {
     match state {
-        TileState::Correct => Color::Green,
+        TileState::Correct => Color::LightGreen,
         TileState::Present => Color::Rgb(205, 135, 41),
         TileState::Absent => Color::DarkGray,
         TileState::Highlighted => Color::LightRed,
-        TileState::Typed => Color::Blue,
         TileState::Typing => Color::LightBlue,
         _ => Color::Reset,
     }

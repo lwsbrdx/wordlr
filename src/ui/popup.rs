@@ -24,12 +24,15 @@ impl Widget for &Popup {
     where
         Self: Sized,
     {
-        let current_ending = self.games_stats.current_game(self.date).and_then(|g| g.ending);
+        let current_ending = self
+            .games_stats
+            .current_game(self.date)
+            .and_then(|g| g.ending);
         let outer_block = Block::bordered()
             .padding(Padding::new(2, 2, 1, 1))
             .border_type(BorderType::Rounded)
             .border_style(match current_ending {
-                Some(Endings::Victory) => Style::new().green(),
+                Some(Endings::Victory) => Style::new().light_green(),
                 Some(Endings::Loss) => Style::new().red(),
                 _ => Style::new().white(),
             });
@@ -71,6 +74,7 @@ impl Popup {
         let stat_block = Block::bordered().border_type(BorderType::Rounded);
 
         Line::from("Statistiques")
+            .bold()
             .left_aligned()
             .render(title_layout, buf);
 
@@ -130,14 +134,14 @@ impl Popup {
         buf: &mut ratatui::prelude::Buffer,
     ) {
         let [title_layout, performances_layout] =
-            Layout::vertical([Constraint::Length(2), Constraint::Length(12)]).areas(mid_area);
+            Layout::vertical([Constraint::Length(2), Constraint::Length(14)]).areas(mid_area);
 
         Line::from("Performances")
             .left_aligned()
             .render(title_layout, buf);
 
         let performances_layouts =
-            Layout::vertical([Constraint::Length(1); 12]).split(performances_layout);
+            Layout::vertical([Constraint::Length(1); 14]).split(performances_layout);
 
         let all_games_count = self.games_stats.get_total_games();
         let current_game_attempts = self
@@ -146,27 +150,48 @@ impl Popup {
             .map(|g| g.attempts.len())
             .unwrap_or(0);
 
+        let current_ending = self
+            .games_stats
+            .current_game(self.date)
+            .and_then(|g| g.ending);
+        let losses_count = self.games_stats.get_losses().len();
+
         performances_layouts
             .iter()
             .enumerate()
             .filter(|(i, _)| i % 2 == 0)
             .for_each(|(index, rect)| {
-                let tx = index / 2 + 1;
-                let s = Paragraph::new(format!("{tx}")).centered();
-                let games_w_attempts = self.games_stats.get_games_by_attempts_count(tx).len();
-                let l = Paragraph::new(format!("{games_w_attempts}")).centered();
+                let current_line = index / 2 + 1;
+                let victories_for_attempts = self
+                    .games_stats
+                    .get_victories_by_attempts_count(current_line)
+                    .len();
+                let max_lines = performances_layouts.len() / 2;
 
-                let percentage =
-                    (games_w_attempts as f32 / all_games_count as f32 * 100.0).max(2.0);
-                let g = Gauge::default()
-                    .gauge_style(if tx == current_game_attempts {
-                        Style::new().green()
-                    } else {
-                        Style::new().dark_gray()
-                    })
+                let (prefix, percentage, suffix) = self.get_stats_for_attempts(
+                    current_line,
+                    max_lines,
+                    losses_count,
+                    victories_for_attempts,
+                    all_games_count as f32,
+                );
+
+                let prefix_paragraph = Paragraph::new(prefix).centered();
+
+                let color = match current_ending {
+                    Some(Endings::Victory) if current_line == current_game_attempts => {
+                        Style::new().light_green()
+                    }
+                    Some(Endings::Loss) if current_line == max_lines => Style::new().red(),
+                    _ => Style::new().dark_gray(),
+                };
+
+                let gauge = Gauge::default()
+                    .gauge_style(color)
                     .percent(percentage as u16)
                     .label("");
-                // .label(format!("{percentage}"));
+
+                let suffix_paragraph = Paragraph::new(suffix).style(color).centered();
 
                 let [attempts_number, stat_gauge, gauge_label] = Layout::horizontal([
                     Constraint::Length(3),
@@ -175,9 +200,37 @@ impl Popup {
                 ])
                 .areas(*rect);
 
-                s.render(attempts_number, buf);
-                g.render(stat_gauge, buf);
-                l.render(gauge_label, buf);
+                prefix_paragraph.render(attempts_number, buf);
+                gauge.render(stat_gauge, buf);
+                suffix_paragraph.render(gauge_label, buf);
             });
+    }
+
+    fn get_stats_for_attempts(
+        &self,
+        current_line: usize,
+        max_lines: usize,
+        losses_count: usize,
+        victories_for_attempts: usize,
+        all_games_count: f32,
+    ) -> (String, f32, String) {
+        let is_last = current_line == max_lines;
+
+        let prefix: String;
+        let dividend: f32;
+        let suffix: String;
+
+        if is_last {
+            prefix = "D".to_owned();
+            dividend = losses_count as f32;
+            suffix = losses_count.to_string();
+        } else {
+            prefix = format!("{current_line}");
+            dividend = victories_for_attempts as f32;
+            suffix = victories_for_attempts.to_string();
+        }
+
+        let percentage = (dividend / all_games_count * 100.0).max(2.0);
+        (prefix, percentage, suffix)
     }
 }
