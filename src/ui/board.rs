@@ -8,18 +8,6 @@ use crate::game::board::BoardState;
 
 pub struct Board;
 
-impl Board {
-    pub fn new() -> Self {
-        Self
-    }
-}
-
-impl Default for Board {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 impl StatefulWidget for &Board {
     type State = BoardState;
 

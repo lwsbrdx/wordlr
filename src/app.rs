@@ -112,8 +112,7 @@ impl App {
 
         frame.render_widget(&self.menu, top);
 
-        let board = Board::new();
-        frame.render_stateful_widget(&board, mid, &mut self.board_state);
+        frame.render_stateful_widget(&Board, mid, &mut self.board_state);
 
         let sb = StatusBar::new(&self.input_mode);
         frame.render_widget(&sb, bottom);
