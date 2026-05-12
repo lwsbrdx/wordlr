@@ -9,11 +9,18 @@ use ratatui::{
     DefaultTerminal, Frame,
     crossterm::event::{self, Event, KeyEventKind},
     layout::{Constraint, Flex, Layout},
+    style::Stylize,
+    text::Line,
 };
 
 use crate::{
     game::{
-        board::BoardState, endings::Endings, game_stats::GamesStats, game_store::GameStore, tile::TileState, validator::{SubmissionError, Validator}
+        board::BoardState,
+        endings::Endings,
+        game_stats::GamesStats,
+        game_store::GameStore,
+        tile::TileState,
+        validator::{SubmissionError, Validator},
     },
     helpers,
     ui::{board::Board, help::Help, menu::Menu, popup::Popup, status_bar::StatusBar},
@@ -102,7 +109,15 @@ impl App {
 
         frame.render_widget(&self.menu, top);
 
-        frame.render_stateful_widget(&Board, mid, &mut self.board_state);
+        let [date_layout, board_layout] =
+            Layout::vertical([Constraint::Length(3), Constraint::Length(47)]).areas(mid);
+        let date_line = Line::from(format!("{}", self.selected_date.format("%A %d %B %Y")))
+            .bold()
+            .centered();
+
+        frame.render_widget(date_line, date_layout);
+
+        frame.render_stateful_widget(&Board, board_layout, &mut self.board_state);
 
         let sb = StatusBar::new(&self.input_mode);
         frame.render_widget(&sb, bottom);
