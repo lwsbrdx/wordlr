@@ -1,6 +1,7 @@
 use chrono::{NaiveDate, Utc};
 
-use crate::{app::Endings, game::dictionnary::Dictionnary};
+use crate::game::endings::Endings;
+use crate::game::dictionnary::Dictionnary;
 
 #[derive(Debug, Default, Clone, serde::Serialize, serde::Deserialize)]
 pub(crate) struct GameStats {

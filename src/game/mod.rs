@@ -4,3 +4,4 @@ pub mod game_stats;
 pub mod game_store;
 pub mod tile;
 pub mod validator;
+pub mod endings;

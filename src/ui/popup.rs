@@ -6,7 +6,7 @@ use ratatui::{
     widgets::{Block, BorderType, Gauge, Padding, Paragraph, Widget},
 };
 
-use crate::game::game_stats::GamesStats;
+use crate::game::{endings::Endings, game_stats::GamesStats};
 
 pub(crate) struct Popup {
     games_stats: GamesStats,
@@ -29,8 +29,8 @@ impl Widget for &Popup {
             .padding(Padding::new(2, 2, 1, 1))
             .border_type(BorderType::Rounded)
             .border_style(match current_ending {
-                Some(crate::app::Endings::Victory) => Style::new().green(),
-                Some(crate::app::Endings::Loss) => Style::new().red(),
+                Some(Endings::Victory) => Style::new().green(),
+                Some(Endings::Loss) => Style::new().red(),
                 _ => Style::new().white(),
             });
         let inner_block = outer_block.inner(area);

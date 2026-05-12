@@ -13,11 +13,7 @@ use ratatui::{
 
 use crate::{
     game::{
-        board::BoardState,
-        game_stats::GamesStats,
-        game_store::GameStore,
-        tile::TileState,
-        validator::{SubmissionError, Validator},
+        board::BoardState, endings::Endings, game_stats::GamesStats, game_store::GameStore, tile::TileState, validator::{SubmissionError, Validator}
     },
     helpers,
     ui::{board::Board, help::Help, menu::Menu, popup::Popup, status_bar::StatusBar},
@@ -29,12 +25,6 @@ const MAX_ATTEMPTS: usize = 6;
 pub enum InputModes {
     Normal,
     Insert,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, serde::Serialize, serde::Deserialize)]
-pub enum Endings {
-    Victory,
-    Loss,
 }
 
 impl fmt::Display for InputModes {
@@ -252,20 +242,7 @@ impl App {
             return;
         }
 
-        let cc = self.board_state.current_col;
-        let cr = self.board_state.current_row;
-        let tile = &mut self.board_state.tiles[cr][cc];
-        tile.letter = Some(c.to_ascii_uppercase());
-
-        if cc == 4 {
-            tile.state = TileState::Typing;
-        } else {
-            tile.state = TileState::Typed;
-        }
-
-        if self.board_state.current_col < 4 {
-            self.board_state.go_next_tile();
-        }
+        self.board_state.set_letter(c.to_ascii_uppercase());
     }
 
     fn normal_mode(&mut self) {

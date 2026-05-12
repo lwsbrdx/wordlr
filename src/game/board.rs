@@ -24,22 +24,35 @@ impl BoardState {
         }
     }
 
+    pub fn set_letter(&mut self, letter: char) {
+        let cc = self.current_col;
+        let cr = self.current_row;
+        let tile = &mut self.tiles[cr][cc];
+        tile.letter = Some(letter.to_ascii_uppercase());
+
+        if cc == 4 {
+            tile.state = TileState::Typing;
+        } else {
+            tile.state = TileState::Typed;
+        }
+
+        if cc < 4 {
+            self.go_next_tile();
+        }
+    }
+
     pub(crate) fn init(&mut self, attempts: &[String], secret_word: String) {
         self.build_current_game(attempts);
 
         let v = Validator::new(secret_word);
-        self
-            .lines()
-            .iter()
-            .enumerate()
-            .for_each(|(row, l)| {
-                let r = v.validate(l);
-                if let Ok(states) = r {
-                    for (i, s) in states.iter().enumerate() {
-                        self.tiles[row][i].state = *s;
-                    }
+        self.lines().iter().enumerate().for_each(|(row, l)| {
+            let r = v.validate(l);
+            if let Ok(states) = r {
+                for (i, s) in states.iter().enumerate() {
+                    self.tiles[row][i].state = *s;
                 }
-            });
+            }
+        });
     }
 
     pub(crate) fn lines(&self) -> Vec<String> {
