@@ -74,12 +74,12 @@ impl App {
     fn init_board_state(&mut self) {
         self.board_state = BoardState::new();
 
-        if let Some(game) = self.games_stats.current_game(self.selected_date) {
-            if game.has_attempts() {
-                let attempts = game.attempts.clone();
-                let secret_word = game.secret_word.clone();
-                self.board_state.init(&attempts, secret_word);
-            }
+        if let Some(game) = self.games_stats.current_game(self.selected_date)
+            && game.has_attempts()
+        {
+            let attempts = game.attempts.clone();
+            let secret_word = game.secret_word.clone();
+            self.board_state.init(&attempts, secret_word);
         }
     }
 
@@ -385,7 +385,11 @@ impl App {
 
         if has_won || has_lost {
             let date = self.selected_date;
-            let ending = if has_won { Endings::Victory } else { Endings::Loss };
+            let ending = if has_won {
+                Endings::Victory
+            } else {
+                Endings::Loss
+            };
             self.games_stats.current_game_mut(date).ending = Some(ending);
 
             self.normal_mode();
