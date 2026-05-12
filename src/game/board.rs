@@ -57,7 +57,7 @@ impl BoardState {
 
     pub(crate) fn lines(&self) -> Vec<String> {
         let mut words = vec![];
-        for i in 0..5 {
+        for i in 0..self.tiles.len() {
             let word = self.tiles[i]
                 .iter()
                 .filter_map(|t| t.letter)
