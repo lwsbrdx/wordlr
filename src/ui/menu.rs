@@ -24,7 +24,7 @@ impl Widget for &Menu {
     {
         let menu_block = Block::default().padding(Padding::horizontal(2));
 
-        Paragraph::new("Quit (q) | Help (?) | Statistics (s)")
+        Paragraph::new("Quitter (q) | Aide (?) | Statistiques (s)")
             .block(menu_block)
             .render(area, buf);
     }

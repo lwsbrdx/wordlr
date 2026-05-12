@@ -45,8 +45,8 @@ impl<'a> Widget for &StatusBar<'a> {
         let help_block = Block::new().padding(Padding::left(1));
         Paragraph::new(Text::styled(
             match self.current_mode {
-                InputModes::Normal => "Press i to enter Insert mode",
-                InputModes::Insert => "Press Esc to enter Normal mode",
+                InputModes::Normal => "Appuyez sur i pour saisir un mot",
+                InputModes::Insert => "Appuyez sur Esc pour revenir en mode normal",
             },
             Style::default().fg(Color::DarkGray),
         ))
