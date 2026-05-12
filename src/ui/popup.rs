@@ -1,3 +1,4 @@
+use chrono::NaiveDate;
 use ratatui::{
     layout::{Constraint, Layout},
     style::{Style, Stylize},
@@ -9,11 +10,12 @@ use crate::game::game_stats::GamesStats;
 
 pub(crate) struct Popup {
     games_stats: GamesStats,
+    date: NaiveDate,
 }
 
 impl Popup {
-    pub fn new(games_stats: GamesStats) -> Self {
-        Self { games_stats }
+    pub fn new(games_stats: GamesStats, date: NaiveDate) -> Self {
+        Self { games_stats, date }
     }
 }
 
@@ -22,10 +24,11 @@ impl Widget for &Popup {
     where
         Self: Sized,
     {
+        let current_ending = self.games_stats.current_game(self.date).and_then(|g| g.ending);
         let outer_block = Block::bordered()
             .padding(Padding::new(2, 2, 1, 1))
             .border_type(BorderType::Rounded)
-            .border_style(match self.games_stats.current_game.ending {
+            .border_style(match current_ending {
                 Some(crate::app::Endings::Victory) => Style::new().green(),
                 Some(crate::app::Endings::Loss) => Style::new().red(),
                 _ => Style::new().white(),
@@ -44,10 +47,14 @@ impl Widget for &Popup {
         self.draw_stats(top, buf);
         self.draw_performances(mid, buf);
 
-        let secret_word = &self.games_stats.current_game.secret_word;
+        let secret_word = self
+            .games_stats
+            .current_game(self.date)
+            .map(|g| g.secret_word.clone())
+            .unwrap_or_default();
         Paragraph::new(vec![
             Line::from("Le mot était"),
-            Line::from(secret_word.to_string()).bold(),
+            Line::from(secret_word).bold(),
             Line::from(""),
             Line::from("☕ https://buymeacoffee.com/lwsbrdx").yellow(),
         ])
@@ -133,7 +140,11 @@ impl Popup {
             Layout::vertical([Constraint::Length(1); 12]).split(performances_layout);
 
         let all_games_count = self.games_stats.get_total_games();
-        let current_game_attempts = self.games_stats.current_game.attempts.len();
+        let current_game_attempts = self
+            .games_stats
+            .current_game(self.date)
+            .map(|g| g.attempts.len())
+            .unwrap_or(0);
 
         performances_layouts
             .iter()

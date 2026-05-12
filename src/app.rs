@@ -14,7 +14,8 @@ use ratatui::{
 use crate::{
     game::{
         board::BoardState,
-        game_stats::{GameStats, GamesStats},
+        game_stats::GamesStats,
+        game_store::GameStore,
         tile::TileState,
         validator::{SubmissionError, Validator},
     },
@@ -73,11 +74,12 @@ impl App {
     fn init_board_state(&mut self) {
         self.board_state = BoardState::new();
 
-        if self.games_stats.current_game.has_attempts() {
-            // add attemps to board_state
-            let attempts = &self.games_stats.current_game.attempts;
-            self.board_state
-                .init(attempts, self.games_stats.current_game.secret_word.clone());
+        if let Some(game) = self.games_stats.current_game(self.selected_date) {
+            if game.has_attempts() {
+                let attempts = game.attempts.clone();
+                let secret_word = game.secret_word.clone();
+                self.board_state.init(&attempts, secret_word);
+            }
         }
     }
 
@@ -119,7 +121,10 @@ impl App {
         if self.stats_visible {
             let popup_area = helpers::centered_rect(50, 55, frame.area());
             frame.render_widget(ratatui::widgets::Clear, popup_area);
-            frame.render_widget(&Popup::new(self.games_stats.clone()), popup_area);
+            frame.render_widget(
+                &Popup::new(self.games_stats.clone(), self.selected_date),
+                popup_area,
+            );
         }
 
         if self.help_visible {
@@ -235,7 +240,12 @@ impl App {
     }
 
     fn input(&mut self, c: char) {
-        if self.games_stats.current_game.ending.is_some() {
+        if self
+            .games_stats
+            .current_game(self.selected_date)
+            .and_then(|g| g.ending)
+            .is_some()
+        {
             return;
         }
 
@@ -265,7 +275,12 @@ impl App {
     }
 
     fn insert_mode(&mut self) {
-        if self.games_stats.current_game.ending.is_some() {
+        if self
+            .games_stats
+            .current_game(self.selected_date)
+            .and_then(|g| g.ending)
+            .is_some()
+        {
             return;
         }
 
@@ -278,7 +293,7 @@ impl App {
     }
 
     pub fn new() -> Result<Self> {
-        let games_stats = GamesStats::load()?;
+        let games_stats = GameStore::load()?;
 
         let mut s = Self {
             menu: Menu,
@@ -320,13 +335,15 @@ impl App {
     }
 
     fn validate(&mut self) -> Result<()> {
-        let validator = Validator::new(self.games_stats.current_game.secret_word.clone());
+        let date = self.selected_date;
+        let secret_word = self.games_stats.current_game_mut(date).secret_word.clone();
+        let validator = Validator::new(secret_word);
         let word = self.board_state.get_current_row_word();
         let validation_result = validator.validate(&word);
 
         match &validation_result {
             Ok(result) => {
-                self.games_stats.current_game.add_attempts(word);
+                self.games_stats.current_game_mut(date).add_attempts(word);
 
                 // propagate tiles states
                 self.update_board_tiles(result);
@@ -359,21 +376,20 @@ impl App {
             .iter()
             .position(|r| *r != TileState::Correct)
             .is_none();
-        let has_lost = !has_won && self.games_stats.current_game.attempts.len() >= MAX_ATTEMPTS;
+        let attempts_len = self
+            .games_stats
+            .current_game(self.selected_date)
+            .map(|g| g.attempts.len())
+            .unwrap_or(0);
+        let has_lost = !has_won && attempts_len >= MAX_ATTEMPTS;
 
         if has_won || has_lost {
-            // handle_victory
-            if has_won {
-                self.games_stats.current_game.ending = Some(Endings::Victory);
-            }
-
-            // handle loss
-            if has_lost {
-                self.games_stats.current_game.ending = Some(Endings::Loss);
-            }
+            let date = self.selected_date;
+            let ending = if has_won { Endings::Victory } else { Endings::Loss };
+            self.games_stats.current_game_mut(date).ending = Some(ending);
 
             self.normal_mode();
-            if let Err(e) = self.games_stats.save() {
+            if let Err(e) = GameStore::save(&self.games_stats) {
                 self.error = Some(format!("Impossible de sauvegarder la partie : {e}"));
             }
         }
@@ -384,7 +400,7 @@ impl App {
     fn previous_date(&mut self) {
         if let Some(substracted_date) = self.selected_date.checked_sub_days(Days::new(1)) {
             self.selected_date = substracted_date;
-            self.on_date_changed(substracted_date);
+            self.on_date_changed();
         }
     }
 
@@ -396,26 +412,11 @@ impl App {
             .min(min_date)
         {
             self.selected_date = added_date;
-            self.on_date_changed(added_date);
+            self.on_date_changed();
         }
     }
 
-    fn on_date_changed(&mut self, new_date: NaiveDate) {
-        self.update_games_stats_after_date_change(new_date);
+    fn on_date_changed(&mut self) {
         self.init_board_state();
     }
-
-    fn update_games_stats_after_date_change(&mut self, new_date: NaiveDate) {
-        let found_option = self
-            .games_stats
-            .all_games
-            .iter()
-            .find(|g| g.date == new_date.format("%Y-%m-%d").to_string());
-        if let Some(game) = found_option {
-            self.games_stats.current_game = game.clone();
-        } else {
-            self.games_stats.current_game = GameStats::new(Some(new_date))
-        }
-    }
 }
-
