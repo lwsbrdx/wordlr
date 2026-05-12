@@ -30,7 +30,7 @@ impl Widget for &Help {
             ex2_label,
             ex3,
             ex3_label,
-            _fill,
+            shortcuts,
             footer,
         ] = Layout::vertical([
             Constraint::Length(1),
@@ -111,7 +111,26 @@ impl Widget for &Help {
         ])])
         .render(ex3_label, buf);
 
-        Line::from("Appuyez sur Esc pour fermer")
+        let shortcut = |key: &'static str, desc: &'static str| {
+            Line::from(vec![
+                Span::from(key).bold(),
+                Span::from(format!("  {desc}")),
+            ])
+        };
+
+        Paragraph::new(vec![
+            Line::from("Raccourcis").bold(),
+            shortcut("i", "Saisir un mot"),
+            shortcut("Esc", "Mode normal"),
+            shortcut("h / ←", "Date précédente"),
+            shortcut("l / →", "Date suivante"),
+            shortcut("s", "Statistiques"),
+            shortcut("?", "Cette aide"),
+            shortcut("q", "Quitter"),
+        ])
+        .render(shortcuts, buf);
+
+        Line::from("Esc pour fermer")
             .dark_gray()
             .right_aligned()
             .render(footer, buf);

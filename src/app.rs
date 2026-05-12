@@ -194,11 +194,11 @@ impl App {
                 self.stats_visible = true;
                 Ok(())
             }
-            event::KeyCode::Left => {
+            event::KeyCode::Left | event::KeyCode::Char('h') => {
                 self.previous_date();
                 Ok(())
             }
-            event::KeyCode::Right => {
+            event::KeyCode::Right | event::KeyCode::Char('l') => {
                 self.next_date();
                 Ok(())
             }
