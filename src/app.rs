@@ -9,8 +9,6 @@ use ratatui::{
     DefaultTerminal, Frame,
     crossterm::event::{self, Event, KeyEventKind},
     layout::{Constraint, Flex, Layout},
-    text::Line,
-    widgets::Paragraph,
 };
 
 use crate::{
@@ -58,6 +56,7 @@ pub struct App {
     input_mode: InputModes,
     help_visible: bool,
     stats_visible: bool,
+    error: Option<String>,
     exit: bool,
 }
 
@@ -128,9 +127,41 @@ impl App {
             frame.render_widget(ratatui::widgets::Clear, help_area);
             frame.render_widget(&Help, help_area);
         }
+
+        if let Some(ref msg) = self.error {
+            use ratatui::{
+                style::Stylize,
+                text::Line,
+                widgets::{Block, BorderType, Paragraph},
+            };
+            let error_area = helpers::centered_rect(50, 20, frame.area());
+            frame.render_widget(ratatui::widgets::Clear, error_area);
+            frame.render_widget(
+                Paragraph::new(vec![
+                    Line::from(msg.as_str()),
+                    Line::from(""),
+                    Line::from("Appuyez sur Esc pour fermer").dark_gray(),
+                ])
+                .centered()
+                .block(
+                    Block::bordered()
+                        .border_type(BorderType::Rounded)
+                        .border_style(ratatui::style::Style::new().red())
+                        .title(" Erreur "),
+                ),
+                error_area,
+            );
+        }
     }
 
     fn handle_key_pressed(&mut self, code: event::KeyCode) -> Result<()> {
+        if self.error.is_some() {
+            if code == event::KeyCode::Esc {
+                self.error = None;
+            }
+            return Ok(());
+        }
+
         if self.help_visible {
             if code == event::KeyCode::Esc || code == event::KeyCode::Char('?') {
                 self.help_visible = false;
@@ -256,6 +287,7 @@ impl App {
             input_mode: InputModes::Normal,
             help_visible: false,
             stats_visible: false,
+            error: None,
             exit: false,
             games_stats,
         };
@@ -341,7 +373,9 @@ impl App {
             }
 
             self.normal_mode();
-            self.games_stats.save()?;
+            if let Err(e) = self.games_stats.save() {
+                self.error = Some(format!("Impossible de sauvegarder la partie : {e}"));
+            }
         }
 
         Ok(())
