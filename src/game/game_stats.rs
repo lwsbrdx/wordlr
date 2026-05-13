@@ -3,6 +3,8 @@ use chrono::{NaiveDate, Utc};
 use crate::game::dictionnary::Dictionnary;
 use crate::game::endings::Endings;
 
+const DATE_FORMAT_BACK: &str = "%Y-%m-%d";
+
 #[derive(Debug, Default, Clone, serde::Serialize, serde::Deserialize)]
 pub(crate) struct GameStats {
     pub attempts: Vec<String>,
@@ -18,12 +20,12 @@ pub(crate) struct GamesStats {
 
 impl GamesStats {
     pub(crate) fn current_game(&self, date: NaiveDate) -> Option<&GameStats> {
-        let date_str = date.format("%Y-%m-%d").to_string();
+        let date_str = date.format(DATE_FORMAT_BACK).to_string();
         self.all_games.iter().find(|g| g.date == date_str)
     }
 
     pub(crate) fn current_game_mut(&mut self, date: NaiveDate) -> &mut GameStats {
-        let date_str = date.format("%Y-%m-%d").to_string();
+        let date_str = date.format(DATE_FORMAT_BACK).to_string();
         if let Some(pos) = self.all_games.iter().position(|g| g.date == date_str) {
             return &mut self.all_games[pos];
         }
@@ -109,7 +111,7 @@ impl GameStats {
             attempts: Vec::new(),
             ending: None,
             secret_word: Dictionnary::new().get_word_for_day(date).to_owned(),
-            date: date.format("%Y-%m-%d").to_string(),
+            date: date.format(DATE_FORMAT_BACK).to_string(),
         }
     }
 

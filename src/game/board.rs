@@ -4,9 +4,16 @@ use std::time::{Duration, Instant};
 use crate::game::tile::{Tile, TileState};
 use crate::game::validator::Validator;
 
+pub(crate) const MIN_COLS: usize = 0;
+pub(crate) const MAX_COLS: usize = 5;
+pub(crate) const MIN_LINES: usize = 0;
+pub(crate) const MAX_LINES: usize = 6;
+
+const HIGHLIGHT_DURATION: u16 = 300;
+
 #[derive(Debug)]
 pub struct BoardState {
-    pub tiles: [[Tile; 5]; 6],
+    pub tiles: [[Tile; MAX_COLS]; MAX_LINES],
     pub current_row: usize,
     pub current_col: usize,
     pub highlight_until: Option<Instant>,
@@ -15,9 +22,9 @@ pub struct BoardState {
 impl BoardState {
     pub fn new() -> Self {
         Self {
-            tiles: [[Tile::default(); 5]; 6],
-            current_row: 0,
-            current_col: 0,
+            tiles: [[Tile::default(); MAX_COLS]; MAX_LINES],
+            current_row: MIN_LINES,
+            current_col: MIN_COLS,
             highlight_until: None,
         }
     }
@@ -28,13 +35,13 @@ impl BoardState {
         let tile = &mut self.tiles[cr][cc];
         tile.letter = Some(letter.to_ascii_uppercase());
 
-        if cc == 4 {
+        if cc == MAX_COLS - 1 {
             tile.state = TileState::Typing;
         } else {
             tile.state = TileState::Typed;
         }
 
-        if cc < 4 {
+        if cc < MAX_COLS - 1 {
             self.go_next_tile();
         }
     }
@@ -69,12 +76,12 @@ impl BoardState {
     }
 
     pub fn go_next_line(&mut self) {
-        if self.current_row >= 5 {
+        if self.current_row >= MAX_LINES - 1 {
             return;
         }
 
         self.current_row += 1;
-        self.current_col = 0;
+        self.current_col = MIN_COLS;
     }
 
     pub fn current_tile(&mut self) -> &mut Tile {
@@ -89,7 +96,7 @@ impl BoardState {
     }
 
     pub fn go_next_tile(&mut self) {
-        if self.current_col >= 4 {
+        if self.current_col >= MAX_COLS - 1 {
             return;
         }
 
@@ -98,12 +105,16 @@ impl BoardState {
     }
 
     pub fn go_previous_tile(&mut self) {
+        if self.current_col == MIN_COLS {
+            return;
+        }
+
         self.current_tile().state = TileState::Empty;
         self.current_col -= 1;
         self.current_tile().state = TileState::Typing;
     }
 
-    pub fn get_current_row(&mut self) -> &mut [Tile; 5] {
+    pub fn get_current_row(&mut self) -> &mut [Tile; MAX_COLS] {
         &mut self.tiles[self.current_row]
     }
 
@@ -119,7 +130,7 @@ impl BoardState {
             .iter_mut()
             .for_each(|t| t.state = TileState::Highlighted);
 
-        self.highlight_until = Some(Instant::now().add(Duration::from_millis(300)));
+        self.highlight_until = Some(Instant::now().add(Duration::from_millis(HIGHLIGHT_DURATION as u64)));
     }
 
     pub fn highlight_empty_tiles(&mut self) {
@@ -129,7 +140,7 @@ impl BoardState {
             }
         });
 
-        self.highlight_until = Some(Instant::now().add(Duration::from_millis(700)));
+        self.highlight_until = Some(Instant::now().add(Duration::from_millis(HIGHLIGHT_DURATION as u64)));
     }
 
     pub fn unhighlight_tiles(&mut self) {
@@ -157,11 +168,11 @@ impl BoardState {
             let chars = attempt.chars().collect::<Vec<char>>();
             let curr_row = self.get_current_row();
 
-            for i in 0..5 {
+            for i in MIN_COLS..MAX_COLS {
                 curr_row[i].letter = Some(chars[i]);
             }
 
-            if index < 5 {
+            if index < MAX_LINES - 1 {
                 self.go_next_line();
             }
         });

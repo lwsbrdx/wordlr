@@ -15,7 +15,7 @@ use ratatui::{
 
 use crate::{
     game::{
-        board::BoardState,
+        board::{BoardState, MAX_COLS, MAX_LINES, MIN_COLS},
         endings::Endings,
         game_stats::GamesStats,
         game_store::GameStore,
@@ -25,8 +25,6 @@ use crate::{
     helpers,
     ui::{board::Board, help::Help, menu::Menu, popup::Popup, status_bar::StatusBar},
 };
-
-const MAX_ATTEMPTS: usize = 6;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum InputModes {
@@ -317,7 +315,7 @@ impl App {
     }
 
     fn submit(&mut self) -> Result<()> {
-        if self.board_state.current_col < 4 {
+        if self.board_state.current_col < MAX_COLS - 1 {
             self.board_state.highlight_empty_tiles();
             return Ok(());
         }
@@ -353,7 +351,7 @@ impl App {
 
     fn update_board_tiles(&mut self, result: &[TileState]) {
         let current_row = self.board_state.get_current_row();
-        for index in 0..5 {
+        for index in MIN_COLS..MAX_COLS {
             current_row[index].state = result[index];
         }
         self.board_state.go_next_line();
@@ -373,7 +371,7 @@ impl App {
             .current_game(self.selected_date)
             .map(|g| g.attempts.len())
             .unwrap_or(0);
-        let has_lost = !has_won && attempts_len >= MAX_ATTEMPTS;
+        let has_lost = !has_won && attempts_len >= MAX_LINES;
 
         if has_won || has_lost {
             let date = self.selected_date;

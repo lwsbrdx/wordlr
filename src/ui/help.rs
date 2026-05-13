@@ -5,7 +5,7 @@ use ratatui::{
     widgets::{Block, BorderType, Padding, Paragraph, Widget},
 };
 
-use crate::game::tile::{Tile, TileState};
+use crate::game::{board::{MAX_COLS, MAX_LINES}, tile::{Tile, TileState}};
 
 pub(crate) struct Help;
 
@@ -49,8 +49,8 @@ impl Widget for &Help {
         Line::from("Comment jouer ?").bold().render(title, buf);
 
         Paragraph::new(vec![
-            Line::from("Devinez le WORDLR en 6 essais. Chaque essai doit être"),
-            Line::from("un mot valide de 5 lettres. La couleur des tuiles change"),
+            Line::from(format!("Devinez le WORDLR en {} essais. Chaque essai doit être", MAX_LINES)),
+            Line::from(format!("un mot valide de {} lettres. La couleur des tuiles change", MAX_COLS)),
             Line::from("pour indiquer à quel point votre essai est proche."),
         ])
         .render(desc, buf);

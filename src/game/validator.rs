@@ -1,4 +1,4 @@
-use crate::game::{dictionnary::Dictionnary, tile::TileState};
+use crate::game::{board::{MAX_COLS, MIN_COLS}, dictionnary::Dictionnary, tile::TileState};
 
 pub struct Validator {
     secret_word: String,
@@ -12,21 +12,21 @@ pub enum SubmissionError {
 
 impl Validator {
     pub fn validate(&self, submitted_word: &str) -> Result<Vec<TileState>, SubmissionError> {
-        if submitted_word.len() < 5 {
+        if submitted_word.len() < MAX_COLS {
             return Err(SubmissionError::TooShort);
         }
 
-        if !Dictionnary::contains(&submitted_word) {
+        if !Dictionnary::contains(submitted_word) {
             return Err(SubmissionError::NotInDictionnary);
         }
 
         let secret: Vec<char> = self.secret_word.chars().collect();
         let guess: Vec<char> = submitted_word.chars().collect();
-        let mut result = vec![TileState::Absent; 5];
-        let mut secret_used = [false; 5];
+        let mut result = vec![TileState::Absent; MAX_COLS];
+        let mut secret_used = [false; MAX_COLS];
 
         // Passe 1 : Correct
-        for i in 0..5 {
+        for i in MIN_COLS..MAX_COLS {
             if guess[i] == secret[i] {
                 result[i] = TileState::Correct;
                 secret_used[i] = true;
@@ -34,11 +34,11 @@ impl Validator {
         }
 
         // Passe 2 : Present
-        for i in 0..5 {
+        for i in MIN_COLS..MAX_COLS {
             if result[i] == TileState::Correct {
                 continue;
             }
-            for j in 0..5 {
+            for j in MIN_COLS..MAX_COLS {
                 if !secret_used[j] && guess[i] == secret[j] {
                     result[i] = TileState::Present;
                     secret_used[j] = true;
