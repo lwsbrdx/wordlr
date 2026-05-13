@@ -6,7 +6,6 @@ use crate::game::validator::Validator;
 
 #[derive(Debug)]
 pub struct BoardState {
-    pub attemps: Vec<String>,
     pub tiles: [[Tile; 5]; 6],
     pub current_row: usize,
     pub current_col: usize,
@@ -16,7 +15,6 @@ pub struct BoardState {
 impl BoardState {
     pub fn new() -> Self {
         Self {
-            attemps: Vec::new(),
             tiles: [[Tile::default(); 5]; 6],
             current_row: 0,
             current_col: 0,
