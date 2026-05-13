@@ -12,14 +12,16 @@ pub struct GameStore;
 
 impl GameStore {
     fn data_path() -> io::Result<PathBuf> {
-        if dirs::data_dir().is_none() {
+        let data_dir = dirs::data_dir();
+
+        if data_dir.is_none() {
             return Err(io::Error::new(
                 io::ErrorKind::NotFound,
                 "cannot find data dir",
             ));
         }
 
-        let data_dir = dirs::data_dir().unwrap();
+        let data_dir = data_dir.unwrap();
         let wordlr_dir = data_dir.join("wordlr");
         if !wordlr_dir.exists() {
             std::fs::create_dir_all(&wordlr_dir)?;
