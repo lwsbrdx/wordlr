@@ -345,6 +345,10 @@ impl App {
                 self.board_state.highlight_all_tiles();
                 Ok(())
             }
+            Err(e) if *e == SubmissionError::TooShort => {
+                self.board_state.highlight_empty_tiles();
+                Ok(())
+            }
             _ => Ok(()),
         }
     }
