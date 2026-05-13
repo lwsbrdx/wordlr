@@ -26,6 +26,8 @@ use crate::{
     ui::{board::Board, help::Help, menu::Menu, popup::Popup, status_bar::StatusBar},
 };
 
+const BEFORE_OPEN_STATS_DURATION: u16 = 500;
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum InputModes {
     Normal,
@@ -48,6 +50,7 @@ pub struct App {
     menu: Menu,
     selected_date: NaiveDate,
     games_stats: GamesStats,
+    game_ended_at: Option<Instant>,
     board_state: BoardState,
     input_mode: InputModes,
     help_visible: bool,
@@ -79,16 +82,24 @@ impl App {
     }
 
     fn handle_events(&mut self) -> Result<()> {
-        if let Ok(true) = event::poll(Duration::from_millis(100)) {
-            if let Event::Key(event) = event::read()?
-                && event.kind == KeyEventKind::Press
-            {
-                self.handle_key_pressed(event.code)?
-            }
-        } else if let Some(i) = self.board_state.highlight_until
+        if let Ok(true) = event::poll(Duration::from_millis(33))
+            && let Event::Key(event) = event::read()?
+            && event.kind == KeyEventKind::Press
+        {
+            self.handle_key_pressed(event.code)?
+        }
+
+        if let Some(i) = self.board_state.highlight_until
             && Instant::now() > i
         {
             self.board_state.unhighlight_tiles();
+        }
+
+        if let Some(i) = self.game_ended_at
+            && Instant::now().duration_since(i).as_millis() >= BEFORE_OPEN_STATS_DURATION as u128
+        {
+            self.stats_visible = true;
+            self.game_ended_at = None;
         }
 
         Ok(())
@@ -162,6 +173,11 @@ impl App {
     }
 
     fn handle_key_pressed(&mut self, code: event::KeyCode) -> Result<()> {
+        if code == event::KeyCode::Char('q') {
+            self.exit();
+            return Ok(());
+        }
+
         if self.error.is_some() {
             if code == event::KeyCode::Esc {
                 self.error = None;
@@ -191,10 +207,6 @@ impl App {
 
     fn handle_normal_mode(&mut self, code: event::KeyCode) -> Result<()> {
         match code {
-            event::KeyCode::Char('q') => {
-                self.exit();
-                Ok(())
-            }
             event::KeyCode::Char('i') => {
                 self.insert_mode();
                 Ok(())
@@ -294,6 +306,7 @@ impl App {
             error: None,
             exit: false,
             games_stats,
+            game_ended_at: None,
         };
 
         // init board_state if we already played today
@@ -389,6 +402,8 @@ impl App {
             if let Err(e) = GameStore::save(&self.games_stats) {
                 self.error = Some(format!("Impossible de sauvegarder la partie : {e}"));
             }
+
+            self.game_ended_at = Some(Instant::now());
         }
 
         Ok(())
