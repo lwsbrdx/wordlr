@@ -23,7 +23,7 @@ impl<'a> Widget for &StatusBar<'a> {
     where
         Self: Sized,
     {
-        let [left, center] = Layout::horizontal([Constraint::Length(10), Constraint::Length(35)])
+        let [left, center] = Layout::horizontal([Constraint::Length(10), Constraint::Length(50)])
             .flex(Flex::Start)
             .areas(area);
 
