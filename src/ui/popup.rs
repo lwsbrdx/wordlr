@@ -59,11 +59,7 @@ impl Popup {
         Self { games_stats, date }
     }
 
-    fn draw_stats(
-        &self,
-        top_area: ratatui::prelude::Rect,
-        buf: &mut ratatui::prelude::Buffer,
-    ) {
+    fn draw_stats(&self, top_area: ratatui::prelude::Rect, buf: &mut ratatui::prelude::Buffer) {
         let [title_layout, stats_layout] =
             Layout::vertical([Constraint::Length(2), Constraint::Length(5)]).areas(top_area);
 
@@ -202,17 +198,31 @@ impl Popup {
         bottom: ratatui::prelude::Rect,
         buf: &mut ratatui::prelude::Buffer,
     ) {
+        let current_ending = current_game.and_then(|g| g.ending);
         let secret_word = current_game
             .map(|g| g.secret_word.clone())
             .unwrap_or_default();
-        Paragraph::new(vec![
-            Line::from("Le mot était"),
-            Line::from(secret_word).bold(),
-            Line::from(""),
-            Line::from("☕ https://buymeacoffee.com/lwsbrdx").yellow(),
-        ])
-        .centered()
-        .render(bottom, buf);
+
+        let empty_line = Line::from("");
+        let buy_me_a_coffe_line = Line::from("☕ https://buymeacoffee.com/lwsbrdx").yellow();
+
+        let lines = if current_ending.is_some() {
+            vec![
+                Line::from("Le mot était"),
+                Line::from(secret_word).bold(),
+                empty_line,
+                buy_me_a_coffe_line,
+            ]
+        } else {
+            vec![
+                Line::from("Oh! Mais tu n'as pas fini!"),
+                Line::from("*****").bold(),
+                empty_line,
+                buy_me_a_coffe_line,
+            ]
+        };
+
+        Paragraph::new(lines).centered().render(bottom, buf);
     }
 
     fn get_stats_for_attempts(
