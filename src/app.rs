@@ -72,9 +72,9 @@ impl App {
         if let Some(game) = self.games_stats.current_game(self.selected_date)
             && game.has_attempts()
         {
-            let attempts = game.attempts.clone();
+            let attempts = &game.attempts;
             let secret_word = game.secret_word.clone();
-            self.board_state.init(&attempts, secret_word);
+            self.board_state.init(attempts, secret_word);
         }
     }
 
@@ -297,7 +297,11 @@ impl App {
         };
 
         // init board_state if we already played today
-        s.init_board_state();
+        if s.games_stats.current_game(s.selected_date).is_some() {
+            s.init_board_state();
+        } else {
+            s.games_stats.new_game_mut(s.selected_date);
+        }
 
         Ok(s)
     }
@@ -315,11 +319,6 @@ impl App {
     }
 
     fn submit(&mut self) -> Result<()> {
-        if self.board_state.current_col < MAX_COLS - 1 {
-            self.board_state.highlight_empty_tiles();
-            return Ok(());
-        }
-
         self.validate()
     }
 
