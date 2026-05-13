@@ -19,6 +19,11 @@ pub(crate) struct GamesStats {
 }
 
 impl GamesStats {
+    pub(crate) fn new_game_mut(&mut self, date: NaiveDate) -> &mut GameStats {
+        self.all_games.push(GameStats::new(Some(date)));
+        self.all_games.last_mut().unwrap()
+    }
+
     pub(crate) fn current_game(&self, date: NaiveDate) -> Option<&GameStats> {
         let date_str = date.format(DATE_FORMAT_BACK).to_string();
         self.all_games.iter().find(|g| g.date == date_str)
@@ -29,8 +34,8 @@ impl GamesStats {
         if let Some(pos) = self.all_games.iter().position(|g| g.date == date_str) {
             return &mut self.all_games[pos];
         }
-        self.all_games.push(GameStats::new(Some(date)));
-        self.all_games.last_mut().unwrap()
+
+        self.new_game_mut(date)
     }
 
     pub(crate) fn get_total_games(&self) -> usize {
