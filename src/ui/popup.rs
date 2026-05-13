@@ -6,7 +6,10 @@ use ratatui::{
     widgets::{Block, BorderType, Gauge, Padding, Paragraph, Widget},
 };
 
-use crate::game::{endings::Endings, game_stats::GamesStats};
+use crate::game::{
+    endings::Endings,
+    game_stats::{GameStats, GamesStats},
+};
 
 pub(crate) struct Popup {
     games_stats: GamesStats,
@@ -18,10 +21,9 @@ impl Widget for &Popup {
     where
         Self: Sized,
     {
-        let current_ending = self
-            .games_stats
-            .current_game(self.date)
-            .and_then(|g| g.ending);
+        let current_game = self.games_stats.current_game(self.date);
+        let current_ending = current_game.and_then(|g| g.ending);
+
         let outer_block = Block::bordered()
             .padding(Padding::new(2, 2, 1, 1))
             .border_type(BorderType::Rounded)
@@ -47,8 +49,8 @@ impl Widget for &Popup {
             .render(title, buf);
 
         self.draw_stats(top, buf);
-        self.draw_performances(mid, buf);
-        self.draw_bottom(bottom, buf);
+        self.draw_performances(current_game, mid, buf);
+        self.draw_bottom(current_game, bottom, buf);
     }
 }
 
@@ -57,7 +59,11 @@ impl Popup {
         Self { games_stats, date }
     }
 
-    fn draw_stats(&self, top_area: ratatui::prelude::Rect, buf: &mut ratatui::prelude::Buffer) {
+    fn draw_stats(
+        &self,
+        top_area: ratatui::prelude::Rect,
+        buf: &mut ratatui::prelude::Buffer,
+    ) {
         let [title_layout, stats_layout] =
             Layout::vertical([Constraint::Length(2), Constraint::Length(5)]).areas(top_area);
 
@@ -120,6 +126,7 @@ impl Popup {
 
     fn draw_performances(
         &self,
+        current_game: Option<&GameStats>,
         mid_area: ratatui::prelude::Rect,
         buf: &mut ratatui::prelude::Buffer,
     ) {
@@ -134,16 +141,9 @@ impl Popup {
             Layout::vertical([Constraint::Length(1); 14]).split(performances_layout);
 
         let all_games_count = self.games_stats.get_total_games();
-        let current_game_attempts = self
-            .games_stats
-            .current_game(self.date)
-            .map(|g| g.attempts.len())
-            .unwrap_or(0);
+        let current_game_attempts = current_game.map(|g| g.attempts.len()).unwrap_or(0);
 
-        let current_ending = self
-            .games_stats
-            .current_game(self.date)
-            .and_then(|g| g.ending);
+        let current_ending = current_game.and_then(|g| g.ending);
         let losses_count = self.games_stats.get_losses().len();
 
         performances_layouts
@@ -196,10 +196,13 @@ impl Popup {
             });
     }
 
-    fn draw_bottom(&self, bottom: ratatui::prelude::Rect, buf: &mut ratatui::prelude::Buffer) {
-        let secret_word = self
-            .games_stats
-            .current_game(self.date)
+    fn draw_bottom(
+        &self,
+        current_game: Option<&GameStats>,
+        bottom: ratatui::prelude::Rect,
+        buf: &mut ratatui::prelude::Buffer,
+    ) {
+        let secret_word = current_game
             .map(|g| g.secret_word.clone())
             .unwrap_or_default();
         Paragraph::new(vec![
