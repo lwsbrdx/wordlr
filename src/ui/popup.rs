@@ -11,12 +11,12 @@ use crate::game::{
     game_stats::{GameStats, GamesStats},
 };
 
-pub(crate) struct Popup {
-    games_stats: GamesStats,
+pub(crate) struct Popup<'a> {
+    games_stats: &'a GamesStats,
     date: NaiveDate,
 }
 
-impl Widget for &Popup {
+impl Widget for &Popup<'_> {
     fn render(self, area: ratatui::prelude::Rect, buf: &mut ratatui::prelude::Buffer)
     where
         Self: Sized,
@@ -54,8 +54,8 @@ impl Widget for &Popup {
     }
 }
 
-impl Popup {
-    pub fn new(games_stats: GamesStats, date: NaiveDate) -> Self {
+impl<'a> Popup<'a> {
+    pub fn new(games_stats: &'a GamesStats, date: NaiveDate) -> Self {
         Self { games_stats, date }
     }
 

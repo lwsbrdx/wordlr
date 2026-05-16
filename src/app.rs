@@ -137,7 +137,7 @@ impl App {
             let popup_area = helpers::centered_rect(50, 65, frame.area());
             frame.render_widget(ratatui::widgets::Clear, popup_area);
             frame.render_widget(
-                &Popup::new(self.games_stats.clone(), self.selected_date),
+                &Popup::new(&self.games_stats, self.selected_date),
                 popup_area,
             );
         }
