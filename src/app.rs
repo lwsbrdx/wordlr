@@ -27,6 +27,8 @@ use crate::{
 };
 
 const BEFORE_OPEN_STATS_DURATION: u16 = 500;
+const FPS: u8 = 60;
+const FPS_LATENCY_MS: u16 = 1000 / FPS as u16;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum InputModes {
@@ -82,7 +84,7 @@ impl App {
     }
 
     fn handle_events(&mut self) -> Result<()> {
-        if let Ok(true) = event::poll(Duration::from_millis(33))
+        if let Ok(true) = event::poll(Duration::from_millis(FPS_LATENCY_MS as u64))
             && let Event::Key(event) = event::read()?
             && event.kind == KeyEventKind::Press
         {
