@@ -63,7 +63,11 @@ impl Popup {
         let [title_layout, stats_layout] =
             Layout::vertical([Constraint::Length(2), Constraint::Length(5)]).areas(top_area);
 
-        let stat_block = Block::bordered().border_type(BorderType::Rounded);
+        fn stat(lines: Vec<Line<'_>>) -> Paragraph<'_> {
+            Paragraph::new(lines)
+                .centered()
+                .block(Block::bordered().border_type(BorderType::Rounded))
+        }
 
         Line::from("Statistiques")
             .bold()
@@ -80,43 +84,35 @@ impl Popup {
             .areas(stats_layout);
 
         let num_games = self.games_stats.get_total_games();
-        Paragraph::new(vec![
+        stat(vec![
             Line::from(format!("{num_games}")),
             Line::from(""),
             Line::from("Parties"),
         ])
-        .centered()
-        .block(stat_block.clone())
         .render(top_stats_games, buf);
 
         let win_rate = self.games_stats.get_win_rate() * 100.0;
-        Paragraph::new(vec![
+        stat(vec![
             Line::from(format!("{win_rate:.2}")),
             Line::from(""),
             Line::from("Victoire (%)"),
         ])
-        .centered()
-        .block(stat_block.clone())
         .render(top_stats_victories_ratio, buf);
 
         let actual_serie = self.games_stats.get_actual_serie();
-        Paragraph::new(vec![
+        stat(vec![
             Line::from(format!("{actual_serie}")),
             Line::from("Série"),
             Line::from("Actuelle"),
         ])
-        .centered()
-        .block(stat_block.clone())
         .render(top_stats_victories_serie, buf);
 
         let best_serie = self.games_stats.get_best_serie();
-        Paragraph::new(vec![
+        stat(vec![
             Line::from(format!("{best_serie}")),
             Line::from("Meilleurs"),
             Line::from("Série"),
         ])
-        .centered()
-        .block(stat_block.clone())
         .render(top_stats_best_serie, buf);
     }
 
