@@ -1,13 +1,21 @@
-use std::{hash::Hasher, sync::OnceLock};
+use std::{collections::HashSet, hash::Hasher, sync::OnceLock};
 
 use chrono::NaiveDate;
 use seeded_random::{Random, Seed};
 
-static WORDS:  OnceLock<Vec<String>> = OnceLock::new();
+static WORDS: OnceLock<Vec<String>> = OnceLock::new();
+static WORDS_SET: OnceLock<HashSet<String>> = OnceLock::new();
 
 fn words() -> &'static Vec<String> {
     WORDS.get_or_init(|| {
-        serde_json::from_str(include_str!("../dictionnary.json")).expect("dictionnary.json invalide")
+        serde_json::from_str(include_str!("../dictionnary.json"))
+            .expect("dictionnary.json invalide")
+    })
+}
+
+fn words_set() -> &'static HashSet<String> {
+    WORDS_SET.get_or_init(|| {
+        HashSet::from_iter(words().clone())
     })
 }
 
@@ -45,7 +53,7 @@ impl Dictionnary {
     }
 
     pub(crate) fn contains(word: &str) -> bool {
-        Self::new().available_words.contains(&word.to_owned())
+        words_set().contains(word)
     }
 }
 
