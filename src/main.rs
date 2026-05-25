@@ -1,6 +1,10 @@
 mod app;
+mod app_state;
 mod game;
+mod game_event;
 mod helpers;
+mod input_handler;
+mod session;
 mod ui;
 
 use crate::app::App;

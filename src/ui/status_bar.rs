@@ -5,7 +5,7 @@ use ratatui::{
     widgets::{Block, Padding, Paragraph, Widget},
 };
 
-use crate::app::InputModes;
+use crate::session::InputModes;
 
 #[derive(Debug)]
 pub struct StatusBar<'a> {
