@@ -61,7 +61,7 @@ impl GamesStats {
         self.all_games.iter().for_each(|game| {
             if game.ending == Some(Endings::Victory) {
                 current_serie += 1;
-            } else {
+            } else if game.ending == Some(Endings::Loss) {
                 current_serie = 0;
             }
 
@@ -74,7 +74,7 @@ impl GamesStats {
     }
 
     pub(crate) fn get_actual_serie(&self) -> u16 {
-        let mut iter = self.all_games.iter().rev();
+        let mut iter = self.all_games.iter().filter(|g| g.ending.is_some()).rev();
         let mut serie = 0;
 
         while let Some(g) = iter.next()
