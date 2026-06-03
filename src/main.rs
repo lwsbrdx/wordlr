@@ -4,6 +4,7 @@ mod game;
 mod game_event;
 mod helpers;
 mod input_handler;
+mod keybindings;
 mod session;
 mod ui;
 

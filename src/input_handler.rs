@@ -5,6 +5,7 @@ use ratatui::crossterm::event::{self, Event, KeyCode, KeyEventKind};
 use crate::{
     app_state::AppState,
     game_event::{Direction, GameEvent},
+    keybindings as kb,
     session::InputModes,
 };
 
@@ -26,7 +27,7 @@ impl InputHandler {
     }
 
     fn key_to_events(code: KeyCode, state: &AppState, mode: &InputModes) -> Vec<GameEvent> {
-        if code == KeyCode::Char('q') {
+        if code == KeyCode::Char(kb::QUIT) {
             return vec![GameEvent::Quit];
         }
 
@@ -36,22 +37,26 @@ impl InputHandler {
                 _ => None,
             },
             AppState::ViewingHelp => match code {
-                KeyCode::Esc | KeyCode::Char('?') => Some(GameEvent::HelpToggled),
+                KeyCode::Esc | KeyCode::Char(kb::HELP) => Some(GameEvent::HelpToggled),
                 _ => None,
             },
             AppState::ViewingStats => match code {
-                KeyCode::Char('s') | KeyCode::Char('S') => Some(GameEvent::StatsToggled),
+                KeyCode::Char(c) if c.eq_ignore_ascii_case(&kb::STATS) => {
+                    Some(GameEvent::StatsToggled)
+                }
                 _ => None,
             },
             AppState::Playing => match mode {
                 InputModes::Normal => match code {
-                    KeyCode::Char('i') => Some(GameEvent::EnterInsertMode),
-                    KeyCode::Char('?') => Some(GameEvent::HelpToggled),
-                    KeyCode::Char('s') | KeyCode::Char('S') => Some(GameEvent::StatsToggled),
-                    KeyCode::Left | KeyCode::Char('h') => {
+                    KeyCode::Char(kb::INSERT_MODE) => Some(GameEvent::EnterInsertMode),
+                    KeyCode::Char(kb::HELP) => Some(GameEvent::HelpToggled),
+                    KeyCode::Char(c) if c.eq_ignore_ascii_case(&kb::STATS) => {
+                        Some(GameEvent::StatsToggled)
+                    }
+                    KeyCode::Left | KeyCode::Char(kb::DATE_PREV) => {
                         Some(GameEvent::DateChanged(Direction::Previous))
                     }
-                    KeyCode::Right | KeyCode::Char('l') => {
+                    KeyCode::Right | KeyCode::Char(kb::DATE_NEXT) => {
                         Some(GameEvent::DateChanged(Direction::Next))
                     }
                     _ => None,

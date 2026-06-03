@@ -5,7 +5,7 @@ use ratatui::{
     widgets::{Block, Padding, Paragraph, Widget},
 };
 
-use crate::session::InputModes;
+use crate::{keybindings as kb, session::InputModes};
 
 #[derive(Debug)]
 pub struct StatusBar<'a> {
@@ -45,8 +45,8 @@ impl<'a> Widget for &StatusBar<'a> {
         let help_block = Block::new().padding(Padding::left(1));
         Paragraph::new(Text::styled(
             match self.current_mode {
-                InputModes::Normal => "Appuyez sur i pour saisir un mot",
-                InputModes::Insert => "Appuyez sur Esc pour revenir en mode normal",
+                InputModes::Normal => format!("Appuyez sur {} pour saisir un mot", kb::INSERT_MODE),
+                InputModes::Insert => "Appuyez sur Esc pour revenir en mode normal".to_owned(),
             },
             Style::default().fg(Color::DarkGray),
         ))

@@ -5,7 +5,10 @@ use ratatui::{
     widgets::{Block, BorderType, Padding, Paragraph, Widget},
 };
 
-use crate::game::{board::{MAX_COLS, MAX_LINES}, tile::{Tile, TileState}};
+use crate::{
+    game::{board::{MAX_COLS, MAX_LINES}, tile::{Tile, TileState}},
+    keybindings as kb,
+};
 
 pub(crate) struct Help;
 
@@ -111,23 +114,17 @@ impl Widget for &Help {
         ])])
         .render(ex3_label, buf);
 
-        let shortcut = |key: &'static str, desc: &'static str| {
+        let shortcut = |key: &str, desc: &str| {
             Line::from(vec![
-                Span::from(key).bold(),
+                Span::from(key.to_owned()).bold(),
                 Span::from(format!("  {desc}")),
             ])
         };
 
-        Paragraph::new(vec![
-            Line::from("Raccourcis").bold(),
-            shortcut("i", "Saisir un mot"),
-            shortcut("Esc", "Mode normal"),
-            shortcut("h / ←", "Date précédente"),
-            shortcut("l / →", "Date suivante"),
-            shortcut("s", "Statistiques"),
-            shortcut("?", "Cette aide"),
-            shortcut("q", "Quitter"),
-        ])
+        let mut lines = vec![Line::from("Raccourcis").bold()];
+        lines.extend(kb::SHORTCUTS.iter().map(|(k, d)| shortcut(k, d)));
+
+        Paragraph::new(lines)
         .render(shortcuts, buf);
 
         Line::from("Esc pour fermer")
