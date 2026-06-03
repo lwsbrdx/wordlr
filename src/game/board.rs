@@ -10,6 +10,24 @@ pub(crate) const MIN_LINES: usize = 0;
 pub(crate) const MAX_LINES: usize = 6;
 
 const HIGHLIGHT_DURATION: u16 = 300;
+const FLIP_STEP_MS: u64 = 16;
+const FLIP_WIDTHS: [u16; 9] = [5, 4, 3, 2, 1, 2, 3, 4, 5];
+
+#[derive(Debug)]
+pub struct RevealAnimation {
+    pub row: usize,
+    pub final_states: [TileState; MAX_COLS],
+    pub current_col: usize,
+    pub flip_step: u8,
+    pub next_step_at: Instant,
+    pub open_stats_after: bool,
+}
+
+impl RevealAnimation {
+    pub fn current_width(&self) -> u16 {
+        FLIP_WIDTHS[self.flip_step as usize]
+    }
+}
 
 #[derive(Debug)]
 pub struct BoardState {
@@ -17,6 +35,7 @@ pub struct BoardState {
     pub current_row: usize,
     pub current_col: usize,
     pub highlight_until: Option<Instant>,
+    pub reveal_animation: Option<RevealAnimation>,
 }
 
 impl BoardState {
@@ -26,6 +45,7 @@ impl BoardState {
             current_row: MIN_LINES,
             current_col: MIN_COLS,
             highlight_until: None,
+            reveal_animation: None,
         }
     }
 
@@ -123,6 +143,56 @@ impl BoardState {
             .iter()
             .filter_map(|tile| tile.letter)
             .collect::<String>()
+    }
+
+    pub fn start_reveal(&mut self, row: usize, final_states: [TileState; MAX_COLS], open_stats_after: bool) {
+        self.reveal_animation = Some(RevealAnimation {
+            row,
+            final_states,
+            current_col: 0,
+            flip_step: 0,
+            next_step_at: Instant::now(),
+            open_stats_after,
+        });
+    }
+
+    /// Avance l'animation d'un tick. Retourne `Some(open_stats)` quand l'animation est terminée.
+    pub fn tick_reveal(&mut self) -> Option<bool> {
+        let anim = self.reveal_animation.as_mut()?;
+
+        if Instant::now() < anim.next_step_at {
+            return None;
+        }
+
+        let flip_step = anim.flip_step;
+        let col = anim.current_col;
+        let row = anim.row;
+
+        // Au milieu du flip (tranche la plus fine), basculer vers l'état final
+        if flip_step == 4 {
+            let final_state = anim.final_states[col];
+            self.tiles[row][col].state = final_state;
+        }
+
+        anim.flip_step += 1;
+
+        if anim.flip_step >= 9 {
+            // Flip de cette tile terminé → passer à la suivante
+            anim.current_col += 1;
+            anim.flip_step = 0;
+            anim.next_step_at = Instant::now(); // la suivante démarre immédiatement
+
+            if anim.current_col >= MAX_COLS {
+                let open_stats = anim.open_stats_after;
+                self.reveal_animation = None;
+                self.go_next_line();
+                return Some(open_stats);
+            }
+        } else {
+            anim.next_step_at = Instant::now() + Duration::from_millis(FLIP_STEP_MS);
+        }
+
+        None
     }
 
     pub fn highlight_all_tiles(&mut self) {

@@ -25,7 +25,18 @@ impl StatefulWidget for &Board {
                 .split(*line);
 
             for (col, el) in line_layout.iter().enumerate() {
-                state.tiles[row][col].render(*el, buf);
+                let tile = state.tiles[row][col]; // Tile est Copy
+
+                let render_area = match &state.reveal_animation {
+                    Some(anim) if anim.row == row && anim.current_col == col => {
+                        let w = anim.current_width().min(el.width);
+                        let x_offset = (el.width.saturating_sub(w)) / 2;
+                        Rect { x: el.x + x_offset, width: w, ..*el }
+                    }
+                    _ => *el,
+                };
+
+                tile.render(render_area, buf);
             }
         }
     }

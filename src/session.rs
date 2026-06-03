@@ -5,7 +5,7 @@ use chrono::{Days, NaiveDate, Utc};
 
 use crate::{
     game::{
-        board::{BoardState, MAX_COLS, MAX_LINES, MIN_COLS},
+        board::{BoardState, MAX_COLS, MAX_LINES},
         endings::Endings,
         game_stats::GamesStats,
         game_store::GameStore,
@@ -85,6 +85,15 @@ impl GameSession {
             self.board_state.unhighlight_tiles();
         }
 
+        if let Some(open_stats) = self.board_state.tick_reveal() {
+            if self.input_mode == InputModes::Insert {
+                self.board_state.current_tile().state = TileState::Typing;
+            }
+            if open_stats {
+                self.game_ended_at = Some(Instant::now());
+            }
+        }
+
         if let Some(i) = self.game_ended_at
             && Instant::now().duration_since(i).as_millis() >= BEFORE_OPEN_STATS_DURATION
         {
@@ -151,6 +160,9 @@ impl GameSession {
     }
 
     fn input(&mut self, c: char) {
+        if self.board_state.reveal_animation.is_some() {
+            return;
+        }
         if self
             .games_stats
             .current_game(self.selected_date)
@@ -159,15 +171,16 @@ impl GameSession {
         {
             return;
         }
-
         if !c.is_alphabetic() {
             return;
         }
-
         self.board_state.set_letter(c.to_ascii_uppercase());
     }
 
     fn insert_mode(&mut self) {
+        if self.board_state.reveal_animation.is_some() {
+            return;
+        }
         if self
             .games_stats
             .current_game(self.selected_date)
@@ -176,17 +189,22 @@ impl GameSession {
         {
             return;
         }
-
         self.input_mode = InputModes::Insert;
         self.board_state.current_tile().state = TileState::Typing;
     }
 
     fn normal_mode(&mut self) {
+        if self.board_state.reveal_animation.is_some() {
+            return;
+        }
         self.input_mode = InputModes::Normal;
         self.board_state.current_tile().state = TileState::Empty;
     }
 
     fn delete(&mut self) {
+        if self.board_state.reveal_animation.is_some() {
+            return;
+        }
         let cc = self.board_state.current_col;
 
         if self.board_state.current_tile().letter.is_none() && cc > 0 {
@@ -203,6 +221,10 @@ impl GameSession {
     }
 
     fn validate(&mut self) -> Result<Vec<SessionSignal>> {
+        if self.board_state.reveal_animation.is_some() {
+            return Ok(vec![]);
+        }
+
         let date = self.selected_date;
         let secret_word = self.games_stats.current_game_mut(date).secret_word.clone();
         let validator = Validator::new(secret_word);
@@ -212,8 +234,8 @@ impl GameSession {
         match &validation_result {
             Ok(result) => {
                 self.games_stats.current_game_mut(date).add_attempts(word);
-                let signals = self.handle_ending(result)?;
-                self.update_board_tiles(result);
+                let (signals, open_stats) = self.handle_ending(result)?;
+                self.start_reveal_animation(result, open_stats);
                 Ok(signals)
             }
             Err(e) if *e == SubmissionError::NotInDictionnary => {
@@ -228,19 +250,16 @@ impl GameSession {
         }
     }
 
-    fn update_board_tiles(&mut self, result: &[TileState]) {
-        let current_row = self.board_state.get_current_row();
-        for index in MIN_COLS..MAX_COLS {
-            current_row[index].state = result[index];
+    fn start_reveal_animation(&mut self, result: &[TileState], open_stats_after: bool) {
+        let row = self.board_state.current_row;
+        let mut final_states = [TileState::Empty; MAX_COLS];
+        for (i, s) in result.iter().enumerate().take(MAX_COLS) {
+            final_states[i] = *s;
         }
-        self.board_state.go_next_line();
-
-        if self.input_mode == InputModes::Insert {
-            self.board_state.current_tile().state = TileState::Typing;
-        }
+        self.board_state.start_reveal(row, final_states, open_stats_after);
     }
 
-    fn handle_ending(&mut self, result: &[TileState]) -> Result<Vec<SessionSignal>> {
+    fn handle_ending(&mut self, result: &[TileState]) -> Result<(Vec<SessionSignal>, bool)> {
         let has_won = result.iter().all(|r| *r == TileState::Correct);
         let attempts_len = self
             .games_stats
@@ -257,15 +276,18 @@ impl GameSession {
             self.normal_mode();
 
             if let Err(e) = GameStore::save(&self.games_stats) {
-                return Ok(vec![SessionSignal::SetError(format!(
-                    "Impossible de sauvegarder la partie : {e}"
-                ))]);
+                return Ok((
+                    vec![SessionSignal::SetError(format!(
+                        "Impossible de sauvegarder la partie : {e}"
+                    ))],
+                    false,
+                ));
             }
 
-            self.game_ended_at = Some(Instant::now());
+            return Ok((vec![], true));
         }
 
-        Ok(vec![])
+        Ok((vec![], false))
     }
 
     fn previous_date(&mut self) {
