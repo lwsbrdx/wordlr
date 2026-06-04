@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/lwsbrdx/wordlr/compare/wordlr-v0.2.0...wordlr-v0.2.1) (2026-06-04)
+
+
+### Bug Fixes
+
+* corriger le trigger update-homebrew (heredoc cassait le YAML) ([1ba8c76](https://github.com/lwsbrdx/wordlr/commit/1ba8c762ee74bd20db8ef8e34d46a75dc10ffbd9))
+
 ## [0.2.0](https://github.com/lwsbrdx/wordlr/compare/wordlr-v0.1.0...wordlr-v0.2.0) (2026-06-04)
 
 
