@@ -23,54 +23,30 @@ jobs:
           MACOS_X64_SHA=$(gh release view "$TAG" --repo "${{ github.repository }}" --json assets \
             --jq '.assets[] | select(.name == "wordlr-macos-x86_64.tar.gz") | .digest | ltrimstr("sha256:")')
 
-          echo "version=$VERSION"         >> "$GITHUB_OUTPUT"
-          echo "linux_sha=$LINUX_SHA"     >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION"             >> "$GITHUB_OUTPUT"
+          echo "linux_sha=$LINUX_SHA"         >> "$GITHUB_OUTPUT"
           echo "macos_arm_sha=$MACOS_ARM_SHA" >> "$GITHUB_OUTPUT"
           echo "macos_x64_sha=$MACOS_X64_SHA" >> "$GITHUB_OUTPUT"
 
       - name: Update formula in tap
         env:
           TAP_TOKEN: ${{ secrets.TAP_GITHUB_TOKEN }}
+          VERSION: ${{ steps.assets.outputs.version }}
+          LINUX_SHA: ${{ steps.assets.outputs.linux_sha }}
+          MACOS_ARM_SHA: ${{ steps.assets.outputs.macos_arm_sha }}
+          MACOS_X64_SHA: ${{ steps.assets.outputs.macos_x64_sha }}
         run: |
-          VERSION="${{ steps.assets.outputs.version }}"
-          LINUX_SHA="${{ steps.assets.outputs.linux_sha }}"
-          MACOS_ARM_SHA="${{ steps.assets.outputs.macos_arm_sha }}"
-          MACOS_X64_SHA="${{ steps.assets.outputs.macos_x64_sha }}"
-
           git clone "https://x-access-token:${TAP_TOKEN}@github.com/lwsbrdx/homebrew-tap.git"
           cd homebrew-tap
 
-          cat > Formula/wordlr.rb << FORMULA
-class Wordlr < Formula
-  desc "Clone de Wordle pour le terminal"
-  homepage "https://github.com/lwsbrdx/wordlr"
-  version "${VERSION}"
-  license "MIT"
+          sed -i "s/version \"[^\"]*\"/version \"${VERSION}\"/" Formula/wordlr.rb
 
-  on_macos do
-    if Hardware::CPU.arm?
-      url "https://github.com/lwsbrdx/wordlr/releases/download/v#{version}/wordlr-macos-arm64.tar.gz"
-      sha256 "${MACOS_ARM_SHA}"
-    else
-      url "https://github.com/lwsbrdx/wordlr/releases/download/v#{version}/wordlr-macos-x86_64.tar.gz"
-      sha256 "${MACOS_X64_SHA}"
-    end
-  end
-
-  on_linux do
-    url "https://github.com/lwsbrdx/wordlr/releases/download/v#{version}/wordlr-linux-x86_64.tar.gz"
-    sha256 "${LINUX_SHA}"
-  end
-
-  def install
-    bin.install "wordlr"
-  end
-
-  test do
-    assert_predicate bin/"wordlr", :executable?
-  end
-end
-FORMULA
+          awk -v arm="${MACOS_ARM_SHA}" -v x64="${MACOS_X64_SHA}" -v linux="${LINUX_SHA}" '
+            /wordlr-macos-arm64.tar.gz/  { print; getline; print "      sha256 \"" arm "\"";   next }
+            /wordlr-macos-x86_64.tar.gz/ { print; getline; print "      sha256 \"" x64 "\"";   next }
+            /wordlr-linux-x86_64.tar.gz/ { print; getline; print "    sha256 \"" linux "\""; next }
+            { print }
+          ' Formula/wordlr.rb > Formula/wordlr.rb.tmp && mv Formula/wordlr.rb.tmp Formula/wordlr.rb
 
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
