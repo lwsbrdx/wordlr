@@ -12,6 +12,15 @@ Devinez le mot du jour en 6 essais. Chaque jour, un nouveau mot de 5 lettres tir
 
 ## Installation
 
+### Homebrew (macOS / Linux)
+
+```sh
+brew tap lwsbrdx/tap
+brew install wordlr
+```
+
+### Depuis les sources
+
 Prérequis : [Rust](https://rustup.rs/) (edition 2024)
 
 ```sh
