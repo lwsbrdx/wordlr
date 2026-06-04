@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/lwsbrdx/wordlr/compare/v0.3.0...v0.3.1) (2026-06-04)
+
+
+### Bug Fixes
+
+* consolider build+homebrew dans release-please (GITHUB_TOKEN ne peut pas déclencher release.yml) ([eb8e568](https://github.com/lwsbrdx/wordlr/commit/eb8e56817122ba2407aa0a008ea38643bbece797))
+
 ## [0.3.0](https://github.com/lwsbrdx/wordlr/compare/v0.2.1...v0.3.0) (2026-06-04)
 
 
