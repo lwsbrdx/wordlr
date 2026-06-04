@@ -11,9 +11,156 @@ permissions:
 jobs:
   release-please:
     runs-on: ubuntu-latest
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
     steps:
       - uses: googleapis/release-please-action@v5
+        id: release
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
+
+  build:
+    needs: release-please
+    if: ${{ needs.release-please.outputs.release_created == 'true' }}
+    name: Build — ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            binary: wordlr
+            archive: wordlr-linux-x86_64.tar.gz
+
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            binary: wordlr
+            archive: wordlr-macos-arm64.tar.gz
+
+          - os: macos-latest
+            target: x86_64-apple-darwin
+            binary: wordlr
+            archive: wordlr-macos-x86_64.tar.gz
+
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            binary: wordlr.exe
+            archive: wordlr-windows-x86_64.zip
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ needs.release-please.outputs.tag_name }}
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Cache Cargo
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ matrix.target }}-cargo-${{ hashFiles('Cargo.lock') }}
+
+      - name: Build
+        run: cargo build --release --target ${{ matrix.target }}
+
+      - name: Package (Unix)
+        if: runner.os != 'Windows'
+        run: |
+          tar -czf ${{ matrix.archive }} \
+            -C target/${{ matrix.target }}/release ${{ matrix.binary }}
+
+      - name: Package (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          Compress-Archive `
+            -Path target/${{ matrix.target }}/release/${{ matrix.binary }} `
+            -DestinationPath ${{ matrix.archive }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ matrix.archive }}
+          path: ${{ matrix.archive }}
+
+  upload-release:
+    needs: [release-please, build]
+    if: ${{ needs.release-please.outputs.release_created == 'true' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v8
+        with:
+          merge-multiple: true
+
+      - name: Upload binaries to release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload ${{ needs.release-please.outputs.tag_name }} \
+            wordlr-linux-x86_64.tar.gz \
+            wordlr-macos-arm64.tar.gz \
+            wordlr-macos-x86_64.tar.gz \
+            wordlr-windows-x86_64.zip \
+            --repo ${{ github.repository }}
+
+  update-homebrew:
+    needs: [release-please, upload-release]
+    if: ${{ needs.release-please.outputs.release_created == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get release asset digests
+        id: assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ needs.release-please.outputs.tag_name }}"
+          VERSION="${TAG#v}"
+
+          LINUX_SHA=$(gh release view "$TAG" --repo "${{ github.repository }}" --json assets \
+            --jq '.assets[] | select(.name == "wordlr-linux-x86_64.tar.gz") | .digest | ltrimstr("sha256:")')
+          MACOS_ARM_SHA=$(gh release view "$TAG" --repo "${{ github.repository }}" --json assets \
+            --jq '.assets[] | select(.name == "wordlr-macos-arm64.tar.gz") | .digest | ltrimstr("sha256:")')
+          MACOS_X64_SHA=$(gh release view "$TAG" --repo "${{ github.repository }}" --json assets \
+            --jq '.assets[] | select(.name == "wordlr-macos-x86_64.tar.gz") | .digest | ltrimstr("sha256:")')
+
+          echo "version=$VERSION"             >> "$GITHUB_OUTPUT"
+          echo "linux_sha=$LINUX_SHA"         >> "$GITHUB_OUTPUT"
+          echo "macos_arm_sha=$MACOS_ARM_SHA" >> "$GITHUB_OUTPUT"
+          echo "macos_x64_sha=$MACOS_X64_SHA" >> "$GITHUB_OUTPUT"
+
+      - name: Update formula in tap
+        env:
+          TAP_TOKEN: ${{ secrets.TAP_GITHUB_TOKEN }}
+          VERSION: ${{ steps.assets.outputs.version }}
+          LINUX_SHA: ${{ steps.assets.outputs.linux_sha }}
+          MACOS_ARM_SHA: ${{ steps.assets.outputs.macos_arm_sha }}
+          MACOS_X64_SHA: ${{ steps.assets.outputs.macos_x64_sha }}
+        run: |
+          git clone "https://x-access-token:${TAP_TOKEN}@github.com/lwsbrdx/homebrew-tap.git"
+          cd homebrew-tap
+
+          sed -i "s/version \"[^\"]*\"/version \"${VERSION}\"/" Formula/wordlr.rb
+
+          awk -v arm="${MACOS_ARM_SHA}" -v x64="${MACOS_X64_SHA}" -v linux="${LINUX_SHA}" '
+            /wordlr-macos-arm64.tar.gz/  { print; getline; print "      sha256 \"" arm "\"";  next }
+            /wordlr-macos-x86_64.tar.gz/ { print; getline; print "      sha256 \"" x64 "\"";  next }
+            /wordlr-linux-x86_64.tar.gz/ { print; getline; print "    sha256 \"" linux "\""; next }
+            { print }
+          ' Formula/wordlr.rb > Formula/wordlr.rb.tmp && mv Formula/wordlr.rb.tmp Formula/wordlr.rb
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Formula/wordlr.rb
+          git commit -m "chore: bump wordlr to v${VERSION}"
+          git push
