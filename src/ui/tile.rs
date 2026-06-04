@@ -6,10 +6,12 @@ use ratatui::{
 
 use crate::game::tile::{Tile, TileState};
 
+pub const COLOR_PRESENT: Color = Color::Rgb(205, 135, 41);
+
 fn get_matching_color(state: TileState) -> Color {
     match state {
         TileState::Correct => Color::LightGreen,
-        TileState::Present => Color::Rgb(205, 135, 41),
+        TileState::Present => COLOR_PRESENT,
         TileState::Absent => Color::DarkGray,
         TileState::Highlighted => Color::LightRed,
         TileState::Typing => Color::LightBlue,

@@ -8,6 +8,7 @@ use ratatui::{
 use crate::{
     game::{board::{MAX_COLS, MAX_LINES}, tile::{Tile, TileState}},
     keybindings as kb,
+    ui::tile::COLOR_PRESENT,
 };
 
 pub(crate) struct Help;
@@ -90,7 +91,7 @@ impl Widget for &Help {
         Paragraph::new(vec![Line::from(vec![
             Span::from("La lettre "),
             Span::from("C")
-                .fg(ratatui::style::Color::Rgb(205, 135, 41))
+                .fg(COLOR_PRESENT)
                 .bold(),
             Span::from(" est dans le mot, mais pas à la bonne place."),
         ])])
