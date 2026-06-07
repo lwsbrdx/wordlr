@@ -3,8 +3,9 @@ use std::io::Result;
 use ratatui::{
     DefaultTerminal, Frame,
     layout::{Constraint, Flex, Layout},
-    style::Stylize,
+    style::{Style, Stylize},
     text::Line,
+    widgets::Paragraph,
 };
 
 use crate::{
@@ -14,6 +15,9 @@ use crate::{
     session::{GameSession, SessionSignal},
     ui::{board::Board, help::Help, menu::Menu, popup::Popup, status_bar::StatusBar},
 };
+
+const MIN_WIDTH: u16 = 52;
+const MIN_HEIGHT: u16 = 24;
 
 #[derive(Debug)]
 pub struct App {
@@ -79,6 +83,17 @@ impl App {
 
     fn draw(&mut self, frame: &mut Frame) {
         let area = frame.area();
+
+        if area.width < MIN_WIDTH || area.height < MIN_HEIGHT {
+            let msg = Paragraph::new(format!(
+                "Terminal trop petit\n{}×{} minimum (actuel : {}×{})",
+                MIN_WIDTH, MIN_HEIGHT, area.width, area.height
+            ))
+            .centered()
+            .style(Style::new().dark_gray());
+            frame.render_widget(msg, area);
+            return;
+        }
 
         let [top, mid, bottom] = Layout::vertical([
             Constraint::Length(1),
