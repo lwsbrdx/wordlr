@@ -238,7 +238,8 @@ impl BoardState {
             let chars = attempt.chars().collect::<Vec<char>>();
             let curr_row = self.get_current_row();
 
-            for i in MIN_COLS..MAX_COLS {
+            let to = MAX_COLS.min(chars.len());
+            for i in MIN_COLS..to {
                 curr_row[i].letter = Some(chars[i]);
             }
 

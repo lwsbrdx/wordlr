@@ -122,15 +122,16 @@ impl<'a> Popup<'a> {
         mid_area: ratatui::prelude::Rect,
         buf: &mut ratatui::prelude::Buffer,
     ) {
+        const NUM_BARS: usize = 7;
+
         let [title_layout, performances_layout] =
-            Layout::vertical([Constraint::Length(2), Constraint::Length(14)]).areas(mid_area);
+            Layout::vertical([Constraint::Length(2), Constraint::Length((NUM_BARS * 2) as u16)]).areas(mid_area);
 
         Line::from("Performances")
             .left_aligned()
             .render(title_layout, buf);
 
-        let performances_layouts =
-            Layout::vertical([Constraint::Length(1); 14]).split(performances_layout);
+        let rows = Layout::vertical([Constraint::Length(2); NUM_BARS]).split(performances_layout);
 
         let all_games_count = self.games_stats.get_total_games();
         let current_game_attempts = current_game.map(|g| g.attempts.len()).unwrap_or(0);
@@ -138,17 +139,14 @@ impl<'a> Popup<'a> {
         let current_ending = current_game.and_then(|g| g.ending);
         let losses_count = self.games_stats.get_losses().len();
 
-        performances_layouts
-            .iter()
-            .enumerate()
-            .filter(|(i, _)| i % 2 == 0)
-            .for_each(|(index, rect)| {
-                let current_line = index / 2 + 1;
+        rows.iter().enumerate().for_each(|(i, row)| {
+                let current_line = i + 1;
                 let victories_for_attempts = self
                     .games_stats
                     .get_victories_by_attempts_count(current_line)
                     .len();
-                let max_lines = performances_layouts.len() / 2;
+                let max_lines = NUM_BARS;
+                let [rect, _] = Layout::vertical([Constraint::Length(1), Constraint::Length(1)]).areas(*row);
 
                 let (prefix, percentage, suffix) = self.get_stats_for_attempts(
                     current_line,
@@ -180,12 +178,12 @@ impl<'a> Popup<'a> {
                     Constraint::Length(40),
                     Constraint::Length(5),
                 ])
-                .areas(*rect);
+                .areas(rect);
 
                 prefix_paragraph.render(attempts_number, buf);
                 gauge.render(stat_gauge, buf);
                 suffix_paragraph.render(gauge_label, buf);
-            });
+        });
     }
 
     fn draw_bottom(
