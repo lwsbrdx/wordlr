@@ -1,5 +1,30 @@
 # Changelog
 
+## [0.4.0](https://github.com/lwsbrdx/wordlr/compare/v0.3.1...v0.4.0) (2026-06-08)
+
+
+### Features
+
+* auto-merge sur toutes les PRs quand CI vert + reviewers ok ([b1b99a2](https://github.com/lwsbrdx/wordlr/commit/b1b99a24973a9a02b3b43460aa226b15197980e5))
+* CI sur les PRs + auto-merge des PRs release-please ([d52e080](https://github.com/lwsbrdx/wordlr/commit/d52e080be9708c2711d6e84771086c730ec9b235))
+* CI sur les PRs + auto-merge des PRs release-please ([6870788](https://github.com/lwsbrdx/wordlr/commit/687078858ee9e0b364e5b6399810c7193e6468f7))
+* CI sur les PRs + auto-merge sur les PRs hors master ([862444f](https://github.com/lwsbrdx/wordlr/commit/862444fb8872a1bff7986f7aa2461d97a4c4b0c5))
+* gestion du terminal trop petit ([d0fecb3](https://github.com/lwsbrdx/wordlr/commit/d0fecb374bfff40ad01af75c2473345771133d2b))
+* message d'erreur si terminal trop petit (52×24 minimum) ([774ceaa](https://github.com/lwsbrdx/wordlr/commit/774ceaa1e52130ea710cb2f35472a406d778a0ba))
+
+
+### Bug Fixes
+
+* auto-merge sur les PRs hors master uniquement ([6a3de97](https://github.com/lwsbrdx/wordlr/commit/6a3de971e626c3fa1b707c0a72b0adb26db93fde))
+* auto-merge uniquement sur les PRs release-please ([b50e126](https://github.com/lwsbrdx/wordlr/commit/b50e126a72dbdc7e49831a602b3469e4477b5898))
+* auto-merge via PAT pour déclencher le CI sur next-release ([c62ce2c](https://github.com/lwsbrdx/wordlr/commit/c62ce2c85b67bfd286deb31eb2e0fa0c4347b51c))
+* possible out of bounds si tentative de moins de 5 lettres ([775fce1](https://github.com/lwsbrdx/wordlr/commit/775fce1030a8d622ce625483ae43e24f18e617b3))
+* possible out of bounds si tentative de moins de 5 lettres ([39bf641](https://github.com/lwsbrdx/wordlr/commit/39bf641c10bf8aeffcd4adc93ec8dbd7bbc2a319))
+* remplacer i % 2 par chunks explicites avec constante NUM_BARS dans draw_performances ([c8921d0](https://github.com/lwsbrdx/wordlr/commit/c8921d0493c31b7dfd825c4e0175adc191620343))
+* remplacer i % 2 par NUM_BARS constant dans draw_performances ([73ccb59](https://github.com/lwsbrdx/wordlr/commit/73ccb599dbd6bc548e4b646dc125758293f9905c))
+* run CI on push to next-release ([48e7977](https://github.com/lwsbrdx/wordlr/commit/48e7977642f1ef6a04dc4c4317d9be58c7a0de5b))
+* utiliser GH_PAT dans auto-merge pour déclencher les workflows CI ([de8dd2f](https://github.com/lwsbrdx/wordlr/commit/de8dd2f1b310a965c44e4940eeabcc4be5c2981c))
+
 ## [0.3.1](https://github.com/lwsbrdx/wordlr/compare/v0.3.0...v0.3.1) (2026-06-04)
 
 
